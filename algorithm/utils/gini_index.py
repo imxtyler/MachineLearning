@@ -4,18 +4,19 @@ import pandas
 
 class GiniIndex:
     def __init__(self,df,attribute,key,y):
+        '''
+        :param df: the dataframe containing the attriute and target
+        :param attribute: the attribute that need to be calculated the gini score and is type 1
+        :param key: the target's label in the classification problem
+        :param y: the target in the classification problem with value 0 or 1
+        :return: the gini score of the attribute
+        '''
         self.df = df
         self.attribute = attribute
         self.key = key
         self.y = y
 
     def gini_index(self):
-        '''
-        :param df: the dataframe containing the attriute and target
-        :param attribute: the attribute that need to be calculated the gini score and is type 1
-        :param y: the target in the classification problem with value 0 or 1
-        :return: the gini score of the attribute
-        '''
         values = list(set(self.df[self.attribute]))
         attr_gini_index = []
         attr_gini_index_dict = {}
