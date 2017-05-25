@@ -22,7 +22,6 @@ class GiniIndex:
         attr_gini_index_dict = {}
         for v in values:
             gini_index = 0
-            self.df[v].fillna(value=-1) #may remove, fixme
             #distinct_vals = list(set(self.df[v]))
             #if len(distinct_vals)!=self.df.shape[0]:
             wi = self.df[v].groupby(self.df[v]).count()/self.df.shape[0]
@@ -39,11 +38,13 @@ class GiniIndex:
 if __name__ == "__main__":
     file_fullpath = '/home/login01/Workspaces/python/dataset/cs.csv'
     #df = pandas.read_csv(file_fullpath,sep=',',index_col=0,na_values='NA',dtype=object,low_memory=False)
-    df = pandas.read_csv(file_fullpath,sep=',',index_col=0,na_values='NA',low_memory=False)
+    #df = pandas.read_csv(file_fullpath,sep=',',index_col=0,na_values='NA',low_memory=False)
+    df = pandas.read_csv(file_fullpath,sep=',',na_values='NA',low_memory=False)
     attribute=["RevolvingUtilizationOfUnsecuredLines","age","NumberOfTime30-59DaysPastDueNotWorse","DebtRatio","MonthlyIncome","NumberOfOpenCreditLinesAndLoans","NumberOfTimes90DaysLate","NumberRealEstateLoansOrLines","NumberOfTime60-89DaysPastDueNotWorse","NumberOfDependents"]
     target_key = "SeriousDlqin2yrs"
-    target = df["SeriousDlqin2yrs"]
-    target.fillna(0, inplace=False)
+    df[target_key] = df[target_key].fillna(0)
+    target = df[target_key]
+    #pandas.set_option('display.max_rows', None)
     #print(target)
     gini = GiniIndex(df,attribute,target_key,target)
     #mygini_index = gini.gini_index()
