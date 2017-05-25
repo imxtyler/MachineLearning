@@ -1,10 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import pandas
-import numpy as np
 
 class GiniIndex:
-    def __init__(self,df,attribute,y):
+    def __init__(self,df,attribute,key,y):
         self.df = df
         self.attribute = attribute
+        self.key = key
         self.y = y
 
     def gini_index(self):
@@ -15,28 +17,37 @@ class GiniIndex:
         :return: the gini score of the attribute
         '''
         values = list(set(self.df[self.attribute]))
-        GiniScore = 0
+        attr_gini_index = []
+        attr_gini_index_dict = {}
         for v in values:
-            val_nums = list(set(self.df[v]))
-            if len(val_nums) != self.df.shape[0]:
-                for val in val_nums:
-                    if val == self.df[v]:
-                        pass # fixme
-            #subset = self.df.loc[self.df[self.attribute] == v]
-            #w = subset.shape[0]*1.0/self.df.shape[0]
-            #y1 = sum(subset[self.y])*1.0/subset.shape[0]
-            #y2 = 1-y1
-            #gini = 1-(y1**2+y2**2)
-            #GiniScore += gini*w
-        return GiniScore
+            gini_index = 0
+            self.df[v].fillna(value=-1) #may remove, fixme
+            #distinct_vals = list(set(self.df[v]))
+            #if len(distinct_vals)!=self.df.shape[0]:
+            wi = self.df[v].groupby(self.df[v]).count()/self.df.shape[0]
+            pi_pos = self.df.groupby(self.df[v])[self.key].sum()/self.df.groupby(self.df[v])[v].count()
+            pi_neg = 1-pi_pos
+            ginii_score = 1-(pi_pos**2+pi_neg**2) #ginii_score's type is pandas.core.series.Series
+            for key,value in ginii_score.to_dict().items():
+                gini_index+=wi.to_dict().get(key)*value
+            attr_gini_index.append(gini_index)
+            attr_gini_index_dict.setdefault(v,gini_index)
+        #return attr_gini_index
+        return attr_gini_index_dict
 
 if __name__ == "__main__":
     file_fullpath = '/home/login01/Workspaces/python/dataset/cs.csv'
+    #df = pandas.read_csv(file_fullpath,sep=',',index_col=0,na_values='NA',dtype=object,low_memory=False)
     df = pandas.read_csv(file_fullpath,sep=',',index_col=0,na_values='NA',low_memory=False)
     attribute=["RevolvingUtilizationOfUnsecuredLines","age","NumberOfTime30-59DaysPastDueNotWorse","DebtRatio","MonthlyIncome","NumberOfOpenCreditLinesAndLoans","NumberOfTimes90DaysLate","NumberRealEstateLoansOrLines","NumberOfTime60-89DaysPastDueNotWorse","NumberOfDependents"]
+    target_key = "SeriousDlqin2yrs"
     target = df["SeriousDlqin2yrs"]
     target.fillna(0, inplace=False)
     #print(target)
-    gini = GiniIndex(df,attribute,target)
-    mygini_index = gini.gini_index()
-    print("mygini_score:", mygini_index)
+    gini = GiniIndex(df,attribute,target_key,target)
+    #mygini_index = gini.gini_index()
+    #print("mygini_score:", mygini_index)
+    mygini_index_dict = gini.gini_index()
+    print("Gini index of each attribute:")
+    for key,val in mygini_index_dict.items():
+        print("%s:%s" % (key,val))
