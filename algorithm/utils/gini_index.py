@@ -50,6 +50,9 @@ if __name__ == "__main__":
     #mygini_index = gini.gini_index()
     #print("mygini_score:", mygini_index)
     mygini_index_dict = gini.gini_index()
+    gini_list = sorted(mygini_index_dict.items(),key=lambda item:item[1])
     print("Gini index of each attribute:")
-    for key,val in mygini_index_dict.items():
-        print("%s:%s" % (key,val))
+    #for key,val in mygini_index_dict.items():
+    #    print("%s:%s" % (key,val))
+    for item in gini_list:
+        print(item)
