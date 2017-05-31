@@ -98,7 +98,19 @@ class DataPreprocessing():
 
         return self.df,dummies_attrs
 
-    def data_pre_process(self):
+    def transform_to_binary(self,attributes):
+        '''
+        :param attributes: the attributes that need to be transformed to dummies
+        '''
+        for item in attributes:
+            #self.df.loc[(self.df[item].isnull()),item] ='No'
+            #self.df.loc[(self.df[item].notnull()),item]='Yes'
+            self.df.loc[(self.df[item].isnull()),item] =0
+            self.df.loc[(self.df[item].notnull()),item]=1
+
+        return self.df
+
+    def data_basic_pre_process(self):
         numberical_attrs,nonnumberical_attrs = self.filter_numberical_attr()
         self.df,dummies_attrs = self.transform_to_dummies(nonnumberical_attrs)
         for item in dummies_attrs:
