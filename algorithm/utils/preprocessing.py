@@ -53,7 +53,7 @@ class DataPreprocessing():
 
     def set_missing_label_mean(self,attributes):
         '''
-        :param attributes: the attributes that need to be transformed to dummies
+        :param attributes: the attributes who's null value need to be filled with mean value
         '''
         for attr in attributes:
             mean_attr = self.df[attr].mean(skipna=True)
@@ -100,7 +100,7 @@ class DataPreprocessing():
 
     def transform_to_binary(self,attributes):
         '''
-        :param attributes: the attributes that need to be transformed to dummies
+        :param attributes: the attributes that need to be transformed to binary 
         '''
         for item in attributes:
             #self.df.loc[(self.df[item].isnull()),item] ='No'
