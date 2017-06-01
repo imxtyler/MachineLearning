@@ -2,7 +2,6 @@
 #-*- coding:utf-8 -*-
 
 import pandas
-import gini_index
 from gini_index import GiniIndex
 
 if __name__ == "__main__":
