@@ -16,5 +16,8 @@ if __name__ == "__main__":
                     break
                 area_number,area = line.strip().split(',')
                 area_dict.setdefault(area,area_number)
-            for key,val in area_dict.items():
-                print(str(key)+','+str(val))
+            print(area_dict)
+            #for item in area_dict.items():
+            #    print(item)
+            #for key,val in area_dict.items():
+            #    print(str(key)+','+str(val))
