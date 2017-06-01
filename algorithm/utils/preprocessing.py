@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import pandas
 from sklearn.ensemble import RandomForestRegressor
 
@@ -109,6 +110,33 @@ class DataPreprocessing():
             self.df.loc[(self.df[item].notnull()),item]=1
 
         return self.df
+
+    def china_area_number_mapping(self,attributes,resource_dir):
+        '''
+        :param attributes: the attributes that need to be transformed to area number 
+        :param resource_dir: the directory including the resource files
+        :param filename: the resource filename, china_area_number.csv
+        '''
+        area_dict = {}
+        try:
+            for dirpath,dirnames,filenames in os.walk(resource_dir):
+                for file in filenames:
+                    if file=='china_area_number.csv':
+                        filepath = dirpath+'/'+file
+                        res_file = open(filepath,'r')
+                        while True:
+                            line = res_file.readline()
+                            if not line:
+                                break
+                            area_number,area = line.strip().split(',')
+                            area_dict.setdefault(area,area_number)
+        except Exception as e:
+            print(e)
+        for item in attributes:
+            dummies_item = pandas.get_dummies(self.df[item],prefix=item)
+            dummies_attrs.append(dummies_item)
+
+        return area_dict
 
     def data_basic_pre_process(self):
         numberical_attrs,nonnumberical_attrs = self.filter_numberical_attr()

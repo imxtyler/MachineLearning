@@ -42,8 +42,3 @@ def sort_weight_random(number_list,weight):
         weight_sum.append(sum)
     t = random.randint(0, sum - 1)
     return number_list[bisect.bisect_right(weight_sum, t)]
-
-#if __name__ == "__main__":
-#    #print(extend_weight_random(['A','B','C','D'],[5,2,2,1]))
-#    #print(weight_random(['A','B','C','D'],[5,2,2,1]))
-#    print(sort_weight_random(['A','B','C','D'],[5,2,2,1]))
