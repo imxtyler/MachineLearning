@@ -115,7 +115,6 @@ class DataPreprocessing():
         '''
         :param attributes: the attributes that need to be transformed to area number 
         :param resource_dir: the directory including the resource files
-        :param filename: the resource filename, china_area_number.csv
         '''
         area_dict = {}
         try:
@@ -132,11 +131,59 @@ class DataPreprocessing():
                             area_dict.setdefault(area,area_number)
         except Exception as e:
             print(e)
-        for item in attributes:
-            dummies_item = pandas.get_dummies(self.df[item],prefix=item)
-            dummies_attrs.append(dummies_item)
+        area_mapping = area_dict
+        for attr in attributes:
+            self.df[attr].map(area_mapping)
 
-        return area_dict
+        #return area_dict
+        return self.df
+
+    def single_attr_binning(self,attribute,bin_num=1,labels=None):
+        '''
+        :param attribute: the attribute that needs to be binned 
+        :param bin_num: the number of bins
+        :param labels: the labels of bins
+        :return: bins, type:Series 
+        '''
+        break_points = []
+        minval = self.df[attribute].min()
+        maxval = self.df[attribute].max()
+        bin_length = (maxval-minval)/bin_num
+        for i in range(0,bin_num+1):
+            if (minval+bin_length*i)<maxval:
+                break_points.append(minval+bin_length*i)
+        break_points.append(maxval)
+        if not labels:
+            labels = range(len(break_points)-1)
+        #attr_bin = pandas.cut(self.df[attribute],bins=break_points,labels=labels,right=False)
+        #attr_bin = pandas.qcut(self.df[attribute],bin_num)
+        attr_bin = pandas.cut(self.df[attribute],bins=break_points,labels=labels,include_lowest=True)
+
+        return attr_bin
+
+    def multi_attrs_binning(self,attributes,bin_num=1,labels=None):
+        '''
+        :param attributes: the attributes that need to be binned 
+        :param bin_num: the number of bins
+        :param labels: the labels of bins
+        :return: bins, type:Series 
+        '''
+        attributes_bin = []
+        for attr in attributes:
+            attr_bin = self.single_attr_binning(attr,bin_num=bin_num,labels=labels)
+            attributes_bin.append(attr_bin)
+
+        return attributes_bin
+
+    def transform_to_binning_rate(self,key,attributes,bin_num=1,labels=None):
+        '''
+        :param key: the target's label in the classification problem, that is y
+        :param attributes: the attributes that need to transform to binning_rate 
+        :param bin_num: the number of bins
+        :param labels: the labels of bins
+        :return: df 
+        '''
+        pass  # fixme
 
     def data_basic_pre_process(self):
         numberical_attrs,nonnumberical_attrs = self.filter_numberical_attr()
