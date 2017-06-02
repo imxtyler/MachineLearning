@@ -88,6 +88,25 @@ class DataPreprocessing():
             print(e)
             return False
 
+    def transform_dtype(self,attributes,d_type,uniform_type=False):
+        '''
+        :param attributes: list, the attributes that need to be transformed its' dtype 
+        :param d_type: list, the destination dtypes of attributes, the entry's value must be int32, int64, float32, float64, etc.
+        :param uniform_type: bool, indicate that the types of attributes are the same or not. the length of attributes and d_type must be the same if not
+        '''
+        try:
+            if uniform_type == True:
+                for attr in attributes:
+                    self.df[attr] = self.df[attr].notnull().astype(d_type[0])
+            else:
+                attrs_types = dict(zip(attributes,d_type))
+                for key,val in attrs_types.items():
+                    self.df[key] = self.df[key].notnull().astype(val)
+        except Exception as e:
+            print(e)
+
+        return self.df
+
     def transform_to_dummies(self,attributes):
         '''
         :param attributes: the attributes that need to be transformed to dummies
@@ -185,7 +204,7 @@ class DataPreprocessing():
         '''
         pass  # fixme
 
-    def data_basic_pre_process(self):
+    def dummies_and_fillna(self):
         numberical_attrs,nonnumberical_attrs = self.filter_numberical_attr()
         self.df,dummies_attrs = self.transform_to_dummies(nonnumberical_attrs)
         for item in dummies_attrs:
