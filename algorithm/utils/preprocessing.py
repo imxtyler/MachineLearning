@@ -133,7 +133,7 @@ class DataPreprocessing():
             print(e)
         area_mapping = area_dict
         for attr in attributes:
-            self.df[attr].map(area_mapping)
+            self.df[attr] = self.df[attr].map(area_mapping)
 
         #return area_dict
         return self.df

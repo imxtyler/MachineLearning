@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
+import re
 
 def regexp_extract(src_string,pattern,index):
     '''
@@ -34,3 +35,14 @@ def regexp_replace(init_string,pattern,replacement):
     replace_string = init_string
 
     return replace_string
+
+def extract(pat,flags=0,expand=None):
+    return str_extract(pat,flags=flags,expand=expand)
+
+def str_extract(arr, pat, flags=0, expand=None):
+    '''
+    :param arr:  
+    :param pat: string type, regular expression pattern with capturing groups
+    :param flags: int type, re module flags, e.g. re.IGNORECASE 
+    :param expand: bool, default False, If True, return DataFrame. If False, return Series/Index/DataFrame.
+    '''
