@@ -20,6 +20,7 @@ from sklearn.svm import SVC
 from ChicagoBoothML_Helpy.EvaluationMetrics import bin_classif_eval
 
 if __name__ == "__main__":
+    pandas.set_option('display.max_rows', None)
     #pprint.pprint(sys.path)
     #file_fullpath = '/home/login01/Workspaces/python/dataset/module_data_app_hl_calls_stg1/app_hl_stg1.csv'
     #file_fullpath = '/home/login01/Workspaces/python/dataset/module_data_stg2/md_data_stg2.csv'
@@ -124,16 +125,16 @@ if __name__ == "__main__":
         #"user_id_card",
         "user_live_province",
         "user_live_city",
-        "user_live_address",
+    #    "user_live_address",
         #"user_regi_address",
         #"user_mailbox",
         "user_marriage",
-        "user_rela_name",
-        "user_relation",
-        "user_rela_phone",
-        "user_high_edu",
+    #    "user_rela_name",
+    #    "user_relation",
+    #    "user_rela_phone",
+    #    "user_high_edu",
         #"user_indu_type",
-        "user_company_name",
+    #    "user_company_name",
         #"user_company_phone",
         #"user_work_time",
         #"user_work_phone",
@@ -146,17 +147,17 @@ if __name__ == "__main__":
         "user_base_fund",
         "user_credit_limit",
         "user_other_overdue",
-        "user_own_overdue", #y, target
+        #"user_own_overdue", #y, target
         #"user_other_overdue_yet",
         "user_own_overdue_yet",
         "user_own_fpd_overdue_order",
         #"user_own_ninety_overdue_order", #optional y, target
-        "user_own_sixty_overdue_order",
-        "user_own_thirty_overdue_order",
-        "user_own_ninety_overdue_num",
-        "user_own_sixty_overdue_num",
-        "user_own_thirty_overdue_num",
-        "user_credit_ninety_overdue",
+    #    "user_own_sixty_overdue_order",
+    #    "user_own_thirty_overdue_order",
+    #    "user_own_ninety_overdue_num",
+    #    "user_own_sixty_overdue_num",
+    #    "user_own_thirty_overdue_num",
+    #    "user_credit_ninety_overdue",
         "user_loan_pass",
         "user_loan_amount",
         "user_four_ident",
@@ -180,9 +181,9 @@ if __name__ == "__main__":
     Y = df[target_key]
     X_train,X_validation,Y_train,Y_validation = model_selection.train_test_split(X,Y,test_size=validation_size,random_state=RANDOM_SEED)
     X_train_datapreprocessing = DataPreprocessing(X_train,attributes,target_key)
-    binary_transform_attrs = ['user_live_address','user_rela_name','user_relation','user_rela_phone','user_high_edu','user_company_name']
-    X_train = X_train_datapreprocessing.transform_to_binary(binary_transform_attrs)
-    X_train = X_train_datapreprocessing.transform_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
+    #binary_transform_attrs = ['user_live_address','user_rela_name','user_relation','user_rela_phone','user_high_edu','user_company_name']
+    #X_train = X_train_datapreprocessing.transform_to_binary(binary_transform_attrs)
+    #X_train = X_train_datapreprocessing.transform_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
     area_attrs = ['user_live_province','user_live_city']
     resource_dir = '../resources'
     X_train = X_train_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
@@ -200,54 +201,51 @@ if __name__ == "__main__":
     #for item in gini_list:
     #    print(item)
 
-    ##B = 600
-    ##rf_model = \
-    ##    RandomForestClassifier(
-    ##        n_estimators=B,
-    ##        criterion='entropy',
-    ##        max_depth=None,  # expand until all leaves are pure or contain < MIN_SAMPLES_SPLIT samples
-    ##        min_samples_split=200,
-    ##        min_samples_leaf=100,
-    ##        min_weight_fraction_leaf=0.0,
-    ##        max_features=None,
-    ##        # number of features to consider when looking for the best split; None: max_features=n_features
-    ##        max_leaf_nodes=None,  # None: unlimited number of leaf nodes
-    ##        bootstrap=True,
-    ##        oob_score=True,  # estimate Out-of-Bag Cross Entropy
-    ##        n_jobs=multiprocessing.cpu_count() - 2,  # paralellize over all CPU cores but 2
-    ##        class_weight=None,  # our classes are skewed, but but too skewed
-    ##        random_state=RANDOM_SEED,
-    ##        verbose=0,
-    ##        warm_start=False)
-    ##rf_model.fit(
-    ##    X=X_train,
-    ##    y=Y_train)
+    #B = 400
+    #rf_model = \
+    #    RandomForestClassifier(
+    #        n_estimators=B,
+    #        criterion='entropy',
+    #        max_depth=None,  # expand until all leaves are pure or contain < MIN_SAMPLES_SPLIT samples
+    #        min_samples_split=200,
+    #        min_samples_leaf=100,
+    #        min_weight_fraction_leaf=0.0,
+    #        max_features=None,
+    #        # number of features to consider when looking for the best split; None: max_features=n_features
+    #        max_leaf_nodes=None,  # None: unlimited number of leaf nodes
+    #        bootstrap=True,
+    #        oob_score=True,  # estimate Out-of-Bag Cross Entropy
+    #        n_jobs=multiprocessing.cpu_count() - 4,  # paralellize over all CPU cores but 2
+    #        class_weight=None,  # our classes are skewed, but but too skewed
+    #        random_state=RANDOM_SEED,
+    #        verbose=0,
+    #        warm_start=False)
+    #rf_model.fit(
+    #    X=X_train,
+    #    y=Y_train)
 
-    ##low_prob = 1e-6
-    ##high_prob = 1 - low_prob
-    ##log_low_prob = numpy.log(low_prob)
-    ##g_low_prob = numpy.log(low_prob)
-    ##log_high_prob = numpy.log(high_prob)
-    ##log_prob_thresholds = numpy.linspace(start=log_low_prob, stop=log_high_prob, num=100)
-    ##prob_thresholds = numpy.exp(log_prob_thresholds)
+    #low_prob = 1e-6
+    #high_prob = 1 - low_prob
+    #log_low_prob = numpy.log(low_prob)
+    #g_low_prob = numpy.log(low_prob)
+    #log_high_prob = numpy.log(high_prob)
+    #log_prob_thresholds = numpy.linspace(start=log_low_prob, stop=log_high_prob, num=100)
+    #prob_thresholds = numpy.exp(log_prob_thresholds)
 
-    X_validation_datapreprocessing = DataPreprocessing(X_validation,attributes,target_key)
-    X_validation = X_validation_datapreprocessing.transform_to_binary(binary_transform_attrs)
-    X_validation = X_validation_datapreprocessing.transform_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
-    X_validation = X_validation_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
-    X_validation = X_validation_datapreprocessing.transform_dtype(area_attrs,d_type=[int],uniform_type=True)
-    X_validation = X_validation_datapreprocessing.dummies_and_fillna()
+    #X_validation_datapreprocessing = DataPreprocessing(X_validation,attributes,target_key)
+    #X_validation = X_validation_datapreprocessing.transform_to_binary(binary_transform_attrs)
+    #X_validation = X_validation_datapreprocessing.transform_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
+    #X_validation = X_validation_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
+    #X_validation = X_validation_datapreprocessing.transform_dtype(area_attrs,d_type=[int],uniform_type=True)
+    #X_validation = X_validation_datapreprocessing.dummies_and_fillna()
 
-    ##rf_pred_probs = rf_model.predict_proba(X=X_train)
-    ###rf_pred_probs = rf_model.predict_proba(X=X_train)
-    ###rf_pred_probs = rf_model.predict_log_proba(X=X_train)
-    ##pandas.set_option('display.max_rows', None)
-    ##print(type(rf_pred_probs))
-    ##print(rf_pred_probs)
-    ###result_probs = numpy.hstack((rf_pred_probs,Y_train.as_matrix()))
-    ##result_probs = numpy.column_stack((rf_pred_probs,Y_train.as_matrix()))
-    ###for item in result_probs:
-    ###    print(item)
+    #rf_pred_probs = rf_model.predict_proba(X=X_train)
+    ##rf_pred_probs = rf_model.predict_log_proba(X=X_train)
+    #pandas.set_option('display.max_rows', None)
+    ##result_probs = numpy.hstack((rf_pred_probs,Y_train.as_matrix()))
+    #result_probs = numpy.column_stack((rf_pred_probs,Y_train.as_matrix()))
+    #for item in result_probs:
+    #    print(item)
 
     ##rf_oos_performance = bin_classif_eval(rf_pred_probs[:,1],Y_validation,pos_cat=1,thresholds=prob_thresholds)
     ##recall_threshold = .75
@@ -257,7 +255,8 @@ if __name__ == "__main__":
     ##print("selected_prob_threshold:", selected_prob_threshold)
     ##print(rf_oos_performance.iloc[idx, :])
 
-    scoring = 'accuracy'
+    #scoring = 'accuracy'
+    scoring = 'precision'
     models = []
     #models.append(('LR',LogisticRegression()))
     #models.append(('CART',DecisionTreeClassifier()))
@@ -267,15 +266,78 @@ if __name__ == "__main__":
     models.append(('RF',RandomForestClassifier()))
     #models.append(('SVM',SVC()))
 
-    results = []
+    train_results = []
     names = []
     for name,model in models:
-        kfold = model_selection.KFold(n_splits=10,random_state=RANDOM_SEED)
+        kfold = model_selection.KFold(n_splits=5,random_state=RANDOM_SEED)
         cv_results = model_selection.cross_val_score(model,X_train,Y_train,scoring=scoring,cv=kfold)
-        results.append(cv_results)
+        train_results.append(cv_results)
         names.append(name)
         msg = "%s: %f (%f)" % (name,cv_results.mean(),cv_results.std())
         print(msg)
+        for item in cv_results:
+            print(item)
+
+        X_validation_datapreprocessing = DataPreprocessing(X_validation,attributes,target_key)
+        #X_validation = X_validation_datapreprocessing.transform_to_binary(binary_transform_attrs)
+        #X_validation = X_validation_datapreprocessing.transform_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
+        X_validation = X_validation_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
+        X_validation = X_validation_datapreprocessing.transform_dtype(area_attrs,d_type=[int],uniform_type=True)
+        X_validation = X_validation_datapreprocessing.dummies_and_fillna()
+        #Y_validation = Y_validation.fillna(value=-1)
+        #Y_validation = Y_validation.fillna(value=random.randint(0,1))
+        low_prob = 1e-6
+        high_prob = 1 - low_prob
+        log_low_prob = numpy.log(low_prob)
+        g_low_prob = numpy.log(low_prob)
+        log_high_prob = numpy.log(high_prob)
+        log_prob_thresholds = numpy.linspace(start=log_low_prob,stop=log_high_prob,num=100)
+        prob_thresholds = numpy.exp(log_prob_thresholds)
+
+        #print(type(X_train.index.values))
+        #for item in sorted(X_train.index.values.tolist()):
+        #    print(item)
+        model.fit(X_train,Y_train)
+        pred_probs = model.predict_proba(X=X_validation)
+        print(pred_probs)
+        model_oos_performance = bin_classif_eval(pred_probs[:,1],Y_validation,pos_cat=1,thresholds=prob_thresholds)
+        recall_threshold = 0.75
+        # print(type(model_oos_performance.recall))
+        # print(model_oos_performance.recall)
+        idx = next(i for i in range(100) if model_oos_performance.recall[i] <= recall_threshold) - 1
+        print("idx = %d" % idx)
+        selected_prob_threshold = prob_thresholds[idx]
+        print("selected_prob_threshold:", selected_prob_threshold)
+        print(model_oos_performance.iloc[idx, :])
+        #for train,test in kfold.split(X_train):
+        #    #print('Train: %s | test: %s' % (train, test))
+        #    #for item in X_train.index.values:
+        #    #    print(item)
+        #    #for train_item in train:
+        #    #    if train_item in X_train.index.values:
+        #    #        print(train_item,' is in index')
+        #    #    else:
+        #    #        print(train_item,' is not in index')
+        #    #    print('train:',train_item)
+        #    #for test_item in test:
+        #    #    print('test:',test_item)
+        #    model.fit(X_train[train],Y_train[train])
+        #    pred_probs = model.predict_proba(X=X_validation)
+        #    print(pred_probs)
+        #    model_oos_performance = bin_classif_eval(pred_probs[:,1],Y_validation,pos_cat=1,thresholds=prob_thresholds)
+        #    recall_threshold = .75
+        #    # print(type(model_oos_performance.recall))
+        #    # print(model_oos_performance.recall)
+        #    idx = next(i for i in range(100) if model_oos_performance.recall[i] <= recall_threshold) - 1
+        #    print("idx = %d" % idx)
+        #    selected_prob_threshold = prob_thresholds[idx]
+        #    print("selected_prob_threshold:", selected_prob_threshold)
+        #    print(model_oos_performance.iloc[idx, :])
+
+        #predictions = model.predict(X_validation)
+        #print(accuracy_score(Y_validation, predictions))
+        #print(confusion_matrix(Y_validation, predictions))
+        #print(classification_report(Y_validation, predictions))
 
     #fig = plt.figure()
     #fig.suptitle('Algorithm Comparison')
@@ -294,35 +356,3 @@ if __name__ == "__main__":
     #print(accuracy_score(Y_validation, predictions))
     #print(confusion_matrix(Y_validation, predictions))
     #print(classification_report(Y_validation, predictions))
-    for name,model in models:
-        model.fit(X_train,Y_train)
-        X_validation_datapreprocessing = DataPreprocessing(X_validation,attributes,target_key)
-        X_validation = X_validation_datapreprocessing.transform_to_binary(binary_transform_attrs)
-        X_validation = X_validation_datapreprocessing.transform_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
-        X_validation = X_validation_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
-        X_validation = X_validation_datapreprocessing.transform_dtype(area_attrs,d_type=[int],uniform_type=True)
-        X_validation = X_validation_datapreprocessing.dummies_and_fillna()
-        #Y_validation = Y_validation.fillna(value=-1)
-        #Y_validation = Y_validation.fillna(value=random.randint(0,1))
-
-        #predictions = model.predict(X_validation)
-        low_prob = 1e-6
-        high_prob = 1 - low_prob
-        log_low_prob = numpy.log(low_prob)
-        g_low_prob = numpy.log(low_prob)
-        log_high_prob = numpy.log(high_prob)
-        log_prob_thresholds = numpy.linspace(start=log_low_prob,stop=log_high_prob,num=100)
-        prob_thresholds = numpy.exp(log_prob_thresholds)
-        pred_probs = model.predict_proba(X=X_validation)
-        model_oos_performance = bin_classif_eval(pred_probs[:,1],Y_validation,pos_cat=1,thresholds=prob_thresholds)
-        recall_threshold = .75
-        # print(type(model_oos_performance.recall))
-        # print(model_oos_performance.recall)
-        idx = next(i for i in range(100) if model_oos_performance.recall[i] <= recall_threshold) - 1
-        print("idx = %d" % idx)
-        selected_prob_threshold = prob_thresholds[idx]
-        print("selected_prob_threshold:", selected_prob_threshold)
-        print(model_oos_performance.iloc[idx, :])
-        #print(accuracy_score(Y_validation, predictions))
-        #print(confusion_matrix(Y_validation, predictions))
-        #print(classification_report(Y_validation, predictions))
