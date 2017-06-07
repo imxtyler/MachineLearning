@@ -245,10 +245,6 @@ class DataPreprocessing():
             self.x_df = pandas.concat([self.x_df,item],axis=1)
         self.x_df.drop(nonnumberical_attrs,axis=1,inplace=True)
         self.df = pandas.concat([self.x_df,self.df[self.key]],axis=1)
-        self.df = self.set_x_missing_label_mean(list(self.df.columns),allnull=allnull,nullvalue=nullvalue)
+        self.x_df = self.set_x_missing_label_mean(list(self.df.columns),allnull=allnull,nullvalue=nullvalue)
 
-        if self.key in (list(self.df.columns.values)):
-            self.x_df = self.df.drop(self.key,axis=1,inplace=False)
-        else:
-            self.x_df = self.df
         return self.x_df
