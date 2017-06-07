@@ -16,6 +16,7 @@ class DataPreprocessing():
         self.df = df
         self.attributes = attributes
         self.key = key
+        self.x_df = None
 
     def data_summary(self):
         print("number of attributes:%d, number of samples:%d" % (self.attr_num,self.sample_num))
@@ -73,8 +74,10 @@ class DataPreprocessing():
                 self.df.loc[(self.df[attr].isnull()),attr] = mean_attr
 
         if self.key in (list(self.df.columns.values)):
-            self.df.drop(self.key,axis=1,inplace=True)
-        return self.df
+            self.x_df = self.df.drop(self.key,axis=1,inplace=False)
+        else:
+            self.x_df = self.df
+        return self.x_df
 
     def filter_numberical_attr(self):
         numberical_attrs = []
@@ -119,8 +122,10 @@ class DataPreprocessing():
             print(e)
 
         if self.key in (list(self.df.columns.values)):
-            self.df.drop(self.key,axis=1,inplace=True)
-        return self.df
+            self.x_df = self.df.drop(self.key,axis=1,inplace=False)
+        else:
+            self.x_df = self.df
+        return self.x_df
 
     def transform_x_to_dummies(self,attributes):
         '''
@@ -132,8 +137,10 @@ class DataPreprocessing():
             dummies_attrs.append(dummies_item)
 
         if self.key in (list(self.df.columns.values)):
-            self.df.drop(self.key,axis=1,inplace=True)
-        return self.df,dummies_attrs
+            self.x_df = self.df.drop(self.key,axis=1,inplace=False)
+        else:
+            self.x_df = self.df
+        return self.x_df,dummies_attrs
 
     def transform_x_to_binary(self,attributes):
         '''
@@ -146,8 +153,10 @@ class DataPreprocessing():
             self.df.loc[(self.df[item].notnull()),item]=1
 
         if self.key in (list(self.df.columns.values)):
-            self.df.drop(self.key,axis=1,inplace=True)
-        return self.df
+            self.x_df = self.df.drop(self.key,axis=1,inplace=False)
+        else:
+            self.x_df = self.df
+        return self.x_df
 
     def china_area_number_mapping(self,attributes,resource_dir):
         '''
@@ -175,8 +184,10 @@ class DataPreprocessing():
 
         #return area_dict
         if self.key in (list(self.df.columns.values)):
-            self.df.drop(self.key,axis=1,inplace=True)
-        return self.df
+            self.x_df = self.df.drop(self.key,axis=1,inplace=False)
+        else:
+            self.x_df = self.df
+        return self.x_df
 
     def single_attr_binning(self,attribute,bin_num=1,labels=None):
         '''
@@ -229,12 +240,15 @@ class DataPreprocessing():
 
     def x_dummies_and_fillna(self,allnull=False,nullvalue=-1):
         numberical_attrs,nonnumberical_attrs = self.filter_numberical_attr()
-        self.df,dummies_attrs = self.transform_x_to_dummies(nonnumberical_attrs)
+        self.x_df,dummies_attrs = self.transform_x_to_dummies(nonnumberical_attrs)
         for item in dummies_attrs:
-            self.df = pandas.concat([self.df,item],axis=1)
-        self.df.drop(nonnumberical_attrs,axis=1,inplace=True)
-        self.df = self.set_x_missing_label_mean(list(self.df.columns),allnull=allnull,nullvalue=nullvalue)
+            self.x_df = pandas.concat([self.x_df,item],axis=1)
+        self.x_df.drop(nonnumberical_attrs,axis=1,inplace=True)
+        self.x_df = self.set_x_missing_label_mean(list(self.x_df.columns),allnull=allnull,nullvalue=nullvalue)
+        self.df = pandas.concat([self.x_df,self.df[self.key]],axis=1)
 
         if self.key in (list(self.df.columns.values)):
-            self.df.drop(self.key,axis=1,inplace=True)
-        return self.df
+            self.x_df = self.df.drop(self.key,axis=1,inplace=False)
+        else:
+            self.x_df = self.df
+        return self.x_df
