@@ -65,7 +65,7 @@ class NearMiss():
         return x[y==key][sel_id],y[y==key][sel_id]    
         
     def sample(self,x,y):    
-        self._validate_estimator(self)
+        self._validate_estimator()
         self.fit(x,y)
         x_min = x[y==self.min_c]
         y_min = y[y==self.min_c]
@@ -97,12 +97,3 @@ class NearMiss():
                     x_sample = np.vstack((x_sample,sel_x))
                     y_sample = np.hstack((y_sample,sel_y))
         return x_sample,y_sample
-                    
-                
-        
-        
-        
-        
-        
-        
-        
