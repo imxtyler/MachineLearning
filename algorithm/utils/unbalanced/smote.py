@@ -11,10 +11,16 @@ from sklearn.neighbors import NearestNeighbors
 
 class Smote:
     def __init__(self,samples,N=10,k=5):
+        '''
+        :param samples: dataframe, minority class.
+        :param N: percentage of the minority class dataframe, N=500 means that sampling 500% of the dataframe
+        :param k: k neighbours 
+        '''
         self.n_samples, self.n_attrs=samples.shape
         self.N=N
         self.k=k
         self.samples=samples
+        print(self.n_samples)
 
     def over_sampling(self):
         keep_list=[]
@@ -51,7 +57,7 @@ class Smote:
     def __populate(self, N, i, nnarray):
         for i in range(N):
             nn = np.random.randint(0, self.k)
-            print(nnarray[nn])
+            #print(nnarray[nn])
             dif=self.samples.iloc[nnarray[nn]]-self.samples.iloc[i]    #including the class label
             gap=np.random.rand(1,self.n_attrs)
             self.synthetic[self.new_index]=self.samples.iloc[i]+gap.flatten()*dif
