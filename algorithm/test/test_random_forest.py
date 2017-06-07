@@ -1,31 +1,34 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
+import random
 import pandas
 import numpy
 import multiprocessing
+import matplotlib.pyplot as plt
+from pandas import DataFrame,Series
 from preprocessing import DataPreprocessing
-#from gini_index import GiniIndex
+from gini_index import GiniIndex
+from sklearn import metrics
 from sklearn import model_selection
-from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import accuracy_score
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV
 from ChicagoBoothML_Helpy.EvaluationMetrics import bin_classif_eval
+from nearmiss1 import NearMiss
+#from smote1 import Smote
+from smote import Smote
+from ensemble import Ensemble
 
 if __name__ == "__main__":
     pandas.set_option('display.max_rows', None)
     #pprint.pprint(sys.path)
     #file_fullpath = '/home/login01/Workspaces/python/dataset/module_data_app_hl_calls_stg1/app_hl_stg1.csv'
     #file_fullpath = '/home/login01/Workspaces/python/dataset/module_data_stg2/md_data_stg2.csv'
-    file_fullpath = '/home/login01/Workspaces/python/dataset/module_data_stg2/md_data_stg2_tmp.csv'
-    df = pandas.read_csv(file_fullpath,sep=',',na_values='NA',low_memory=False)
+    #file_fullpath = '/home/login01/Workspaces/python/dataset/module_data_stg2/md_data_stg2_tmp.csv'
+    #train_fullpath = '/home/login01/Workspaces/python/dataset/module_data_stg2/md_data_stg2_tmp.csv'
+    train_fullpath = '/home/login01/Workspaces/python/dataset/module_data_stg2/tmp_train.csv'
+    test_fullpath = '/home/login01/Workspaces/python/dataset/module_data_stg2/tmp_test.csv'
+    #test_fullpath = '/home/login01/Workspaces/python/dataset/module_data_stg2/tmp_train.csv'
     #attributes=[
     #    "id",
     #    "method",
@@ -125,16 +128,16 @@ if __name__ == "__main__":
         #"user_id_card",
         "user_live_province",
         "user_live_city",
-    #    "user_live_address",
+        "user_live_address",
         #"user_regi_address",
         #"user_mailbox",
         "user_marriage",
-    #    "user_rela_name",
-    #    "user_relation",
-    #    "user_rela_phone",
-    #    "user_high_edu",
+        "user_rela_name",
+        "user_relation",
+        "user_rela_phone",
+        "user_high_edu",
         #"user_indu_type",
-    #    "user_company_name",
+        "user_company_name",
         #"user_company_phone",
         #"user_work_time",
         #"user_work_phone",
@@ -152,12 +155,12 @@ if __name__ == "__main__":
         "user_own_overdue_yet",
         "user_own_fpd_overdue_order",
         #"user_own_ninety_overdue_order", #optional y, target
-    #    "user_own_sixty_overdue_order",
-    #    "user_own_thirty_overdue_order",
-    #    "user_own_ninety_overdue_num",
-    #    "user_own_sixty_overdue_num",
-    #    "user_own_thirty_overdue_num",
-    #    "user_credit_ninety_overdue",
+        "user_own_sixty_overdue_order",
+        "user_own_thirty_overdue_order",
+        "user_own_ninety_overdue_num",
+        "user_own_sixty_overdue_num",
+        "user_own_thirty_overdue_num",
+        "user_credit_ninety_overdue",
         "user_loan_pass",
         "user_loan_amount",
         "user_four_ident",
@@ -169,37 +172,37 @@ if __name__ == "__main__":
     ]
     target_key="user_own_overdue"
     #target_key="user_own_ninety_overdue_order"
-    #print(df['user_income_range'].head(20))
-    #print(df['user_last_consume'].head(20))
-    df.convert_objects(convert_numeric=True)
-    #df['user_last_consume'].str.replace('','')
-    #df.info()
-
-    validation_size = 0.20
     RANDOM_SEED = 99
-    X = df[attributes]
-    Y = df[target_key]
-    X_train,X_validation,Y_train,Y_validation = model_selection.train_test_split(X,Y,test_size=validation_size,random_state=RANDOM_SEED)
-    X_train_datapreprocessing = DataPreprocessing(X_train,attributes,target_key)
-    #binary_transform_attrs = ['user_live_address','user_rela_name','user_relation','user_rela_phone','user_high_edu','user_company_name']
-    #X_train = X_train_datapreprocessing.transform_to_binary(binary_transform_attrs)
-    #X_train = X_train_datapreprocessing.transform_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
-    area_attrs = ['user_live_province','user_live_city']
-    resource_dir = '../resources'
-    X_train = X_train_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
-    X_train = X_train_datapreprocessing.transform_dtype(area_attrs,d_type=[int],uniform_type=True)
-    X_train = X_train_datapreprocessing.dummies_and_fillna()
-    #X_train.info()
-    #print(X_train.head(5))
 
-    #Gini_DF = pandas.concat([X_train,Y_train],axis=1)
-    ##gini_attrs = Gini_DF.axes[1]
-    #gini_attrs = list(Gini_DF.columns.values)
-    #gini = GiniIndex(Gini_DF,gini_attrs,target_key,Gini_DF[target_key])
-    #gini_index_dict = gini.gini_index()
-    #gini_list = sorted(gini_index_dict.items(),key=lambda item:item[1])
-    #for item in gini_list:
-    #    print(item)
+    ##############################################################################################################
+    ## Way one, using train_test_split spliting the source data set into train and test
+    #df = pandas.read_csv(file_fullpath,sep=',',na_values='NA',low_memory=False)
+    #df.convert_objects(convert_numeric=True)
+    #X = df[attributes]
+    #y = df[target_key]
+    #validation_size = 0.20
+    #X_train,X_validation,y_train,y_validation = model_selection.train_test_split(X,y,test_size=validation_size,random_state=RANDOM_SEED)
+    #train_datapreprocessing = DataPreprocessing(pandas.concat([X_train,y_train],axis=1),attributes,target_key)
+    ##train_datapreprocessing.data_summary()
+    #binary_transform_attrs = ['user_live_address','user_rela_name','user_relation','user_rela_phone','user_high_edu','user_company_name']
+    #X_train = train_datapreprocessing.transform_x_to_binary(binary_transform_attrs)
+    #X_train = train_datapreprocessing.transform_x_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
+    #area_attrs = ['user_live_province','user_live_city']
+    #resource_dir = '../resources'
+    #X_train = train_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
+    #X_train = train_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
+    #X_train = train_datapreprocessing.x_dummies_and_fillna()
+    ##X_train.info()
+    ##print(X_train.head(5))
+
+    ##Gini_DF = pandas.concat([X_train,y_train],axis=1)
+    ###gini_attrs = Gini_DF.axes[1]
+    ##gini_attrs = list(Gini_DF.columns.values)
+    ##gini = GiniIndex(Gini_DF,gini_attrs,target_key,Gini_DF[target_key])
+    ##gini_index_dict = gini.gini_index()
+    ##gini_list = sorted(gini_index_dict.items(),key=lambda item:item[1])
+    ##for item in gini_list:
+    ##    print(item)
 
     #B = 400
     #rf_model = \
@@ -222,137 +225,239 @@ if __name__ == "__main__":
     #        warm_start=False)
     #rf_model.fit(
     #    X=X_train,
-    #    y=Y_train)
-
-    #low_prob = 1e-6
-    #high_prob = 1 - low_prob
-    #log_low_prob = numpy.log(low_prob)
-    #g_low_prob = numpy.log(low_prob)
-    #log_high_prob = numpy.log(high_prob)
-    #log_prob_thresholds = numpy.linspace(start=log_low_prob, stop=log_high_prob, num=100)
-    #prob_thresholds = numpy.exp(log_prob_thresholds)
-
-    #X_validation_datapreprocessing = DataPreprocessing(X_validation,attributes,target_key)
-    #X_validation = X_validation_datapreprocessing.transform_to_binary(binary_transform_attrs)
-    #X_validation = X_validation_datapreprocessing.transform_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
-    #X_validation = X_validation_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
-    #X_validation = X_validation_datapreprocessing.transform_dtype(area_attrs,d_type=[int],uniform_type=True)
-    #X_validation = X_validation_datapreprocessing.dummies_and_fillna()
-
+    #    y=y_train)
+    #validation_datapreprocessing = DataPreprocessing(pandas.concat([X_validation,y_validation],axis=1),attributes,target_key)
+    ##validation_datapreprocessing.data_summary()
+    ##X_validation = validation_datapreprocessing.transform_x_to_binary(binary_transform_attrs)
+    ##X_validation = validation_datapreprocessing.transform_x_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
+    #X_validation = validation_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
+    #X_validation = validation_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
+    #X_validation = validation_datapreprocessing.x_dummies_and_fillna()
     #rf_pred_probs = rf_model.predict_proba(X=X_train)
     ##rf_pred_probs = rf_model.predict_log_proba(X=X_train)
-    #pandas.set_option('display.max_rows', None)
-    ##result_probs = numpy.hstack((rf_pred_probs,Y_train.as_matrix()))
-    #result_probs = numpy.column_stack((rf_pred_probs,Y_train.as_matrix()))
-    #for item in result_probs:
+    ##result_probs = numpy.hstack((rf_pred_probs,y_train.as_matrix()))
+    #result_probs = numpy.column_stack((rf_pred_probs,y_train.as_matrix()))
+    ##for item in result_probs:
+    ##    print(item)
+    #print(metrics.confusion_matrix(y_validation, rf_pred_probs))
+    #print(metrics.accuracy_score(y_validation, rf_pred_probs))
+    #print(metrics.precision_score(y_validation, rf_pred_probs))
+    #print(metrics.f1_score(y_validation, rf_pred_probs))
+    #print(metrics.classification_report(y_validation, rf_pred_probs))
+
+    ##############################################################################################################
+    # Way two, cross-validation, using KFold spliting the source data set into train and test, repeat k times, the default evaluation
+    train_df = pandas.read_csv(train_fullpath,sep=',',na_values='NA',low_memory=False)
+    #for item in train_df.columns.values:
+    #    pandas.to_numeric(train_df[item])
+    X_train = train_df[attributes]
+    y_train = train_df[target_key]
+    train_datapreprocessing = DataPreprocessing(pandas.concat([X_train,y_train],axis=1),attributes,target_key)
+    #train_datapreprocessing.data_summary()
+    binary_transform_attrs = ['user_live_address','user_rela_name','user_relation','user_rela_phone','user_high_edu','user_company_name']
+    X_train = train_datapreprocessing.transform_x_to_binary(binary_transform_attrs)
+    X_train = train_datapreprocessing.transform_x_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
+    area_attrs = ['user_live_province','user_live_city']
+    resource_dir = '../resources'
+    X_train = train_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
+    X_train = train_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
+    X_train = train_datapreprocessing.x_dummies_and_fillna()
+    train_datapreprocessing.data_summary()
+    # Begin: smote
+    new_train_df = pandas.concat([X_train,y_train],axis=1)
+    smote_processor = Smote(new_train_df[new_train_df[target_key]==1],N=500,k=5)
+    train_df_sample = smote_processor.over_sampling()
+    #X_sample,y_sample = smote_processor.over_sampling()
+    sample = DataFrame(train_df_sample,columns=new_train_df.columns.values)
+    #sample_datapreprocessing = DataPreprocessing(sample,sample.drop(target_key,axis=1,inplace=False).columns.values,target_key)
+    #sample_datapreprocessing.data_summary()
+    X_train = sample[X_train.columns.values]
+    y_train = sample[target_key]
+    merged_train_datapreprocessing = DataPreprocessing(pandas.concat([X_train,y_train],axis=1),attributes,target_key)
+    merged_train_datapreprocessing.data_summary()
+    # End: smote
+    ## Begin: nearmiss
+    #nearmiss_processor = NearMiss(random_state=RANDOM_SEED,n_neighbors=5)
+    #X_sample,y_sample = nearmiss_processor.sample(X_train.as_matrix(),y_train.as_matrix())
+    #sample = pandas.concat([DataFrame(X_sample,columns=X_train.columns.values),Series(y_sample).to_frame().rename(columns={0:target_key})],axis=1)
+    ##sample_datapreprocessing = DataPreprocessing(sample,sample.drop(target_key,axis=1,inplace=False).columns.values,target_key)
+    ##sample_datapreprocessing.data_summary()
+    #X_train = pandas.concat([X_train,DataFrame(X_sample,columns=X_train.columns.values)])
+    #y_train = pandas.concat([y_train.to_frame(),sample[target_key].to_frame()])[target_key]
+    #X_train = X_train.reset_index(drop=True)
+    #y_train = y_train.reset_index(drop=True)
+    #merged_train_datapreprocessing = DataPreprocessing(pandas.concat([X_train,y_train],axis=1),attributes,target_key)
+    #merged_train_datapreprocessing.data_summary()
+    ## End: nearmiss
+    ## Begin: smote1
+    #smote_processor = Smote(random_seed=RANDOM_SEED,n_neighbors=5,m_neighbors=5)
+    #X_sample,y_sample = smote_processor.sample(X_train.as_matrix(),y_train.as_matrix())
+    #sample = pandas.concat([DataFrame(X_sample,columns=X_train.columns.values),Series(y_sample).to_frame().rename(columns={0:target_key})],axis=1)
+    ##sample_datapreprocessing = DataPreprocessing(sample,sample.drop(target_key,axis=1,inplace=False).columns.values,target_key)
+    ##sample_datapreprocessing.data_summary()
+    #X_train = pandas.concat([X_train,DataFrame(X_sample,columns=X_train.columns.values)])
+    #y_train = pandas.concat([y_train.to_frame(),sample[target_key].to_frame()])[target_key]
+    #X_train = X_train.reset_index(drop=True)
+    #y_train = y_train.reset_index(drop=True)
+    #merged_train_datapreprocessing = DataPreprocessing(pandas.concat([X_train,y_train],axis=1),attributes,target_key)
+    #merged_train_datapreprocessing.data_summary()
+    ## End: smote1
+    ## Begin: ensemble
+    #ensemble_processor = Ensemble(random_seed=RANDOM_SEED,n_subset=10,n_tree=12)
+    #X_sample,y_sample = ensemble_processor.sample(X_train.as_matrix(),y_train.as_matrix())
+    #sample = pandas.concat([DataFrame(X_sample,columns=X_train.columns.values),Series(y_sample).to_frame().rename(columns={0:target_key})],axis=1)
+    ##sample_datapreprocessing = DataPreprocessing(sample,sample.drop(target_key,axis=1,inplace=False).columns.values,target_key)
+    ##sample_datapreprocessing.data_summary()
+    #X_train = pandas.concat([X_train,DataFrame(X_sample,columns=X_train.columns.values)])
+    #y_train = pandas.concat([y_train.to_frame(),sample[target_key].to_frame()])[target_key]
+    #X_train = X_train.reset_index(drop=True)
+    #y_train = y_train.reset_index(drop=True)
+    #merged_train_datapreprocessing = DataPreprocessing(pandas.concat([X_train,y_train],axis=1),attributes,target_key)
+    #merged_train_datapreprocessing.data_summary()
+    ## End: ensemble
+
+    #X_train.describe()
+    #X_train.info()
+    #print(X_train.head(5))
+
+    #Gini_DF = pandas.concat([X_train,y_train],axis=1)
+    ##gini_attrs = Gini_DF.axes[1]
+    #gini_attrs = list(Gini_DF.columns.values)
+    #gini = GiniIndex(Gini_DF,gini_attrs,target_key,Gini_DF[target_key])
+    #gini_index_dict = gini.gini_index()
+    #gini_list = sorted(gini_index_dict.items(),key=lambda item:item[1])
+    #for item in gini_list:
+    #    print(type(item))
     #    print(item)
 
-    ##rf_oos_performance = bin_classif_eval(rf_pred_probs[:,1],Y_validation,pos_cat=1,thresholds=prob_thresholds)
-    ##recall_threshold = .75
-    ##idx = next(i for i in range(100) if rf_oos_performance.recall[i] <= recall_threshold) - 1
-    ##print("idx = %d" % idx)
-    ##selected_prob_threshold = prob_thresholds[idx]
-    ##print("selected_prob_threshold:", selected_prob_threshold)
-    ##print(rf_oos_performance.iloc[idx, :])
+    #-----------------------------Find the best parameters' combination of the model------------------------------
+    #param_test1 = {'n_estimators': range(20, 600, 20)}
+    #gsearch1 = GridSearchCV(estimator=RandomForestClassifier(min_samples_split=200,
+    #                                                         min_samples_leaf=2, max_depth=5, max_features='sqrt',
+    #                                                         random_state=19),
+    #                        param_grid=param_test1, scoring='roc_auc', cv=5)
+    #gsearch1.fit(X_train,y_train)
+    #for item in gsearch1.grid_scores_:
+    #    print(item)
+    #print(gsearch1.best_params_)
+    #print(gsearch1.best_score_)
+    ##print(gsearch1.grid_scores_, gsearch1.best_params_, gsearch2.best_score_,'\n')
+    #print('-----------------------------------------------------------------------------------------------------')
+    #param_test2 = {'max_depth': range(2, 16, 2), 'min_samples_split': range(20, 200, 20)}
+    #gsearch2 = GridSearchCV(estimator=RandomForestClassifier(n_estimators=300,
+    #                                                         min_samples_leaf=2, max_features='sqrt', oob_score=True,
+    #                                                         random_state=19),
+    #                        param_grid=param_test2, scoring='roc_auc', iid=False, cv=5)
+    #gsearch2.fit(X_train,y_train)
+    #for item in gsearch2.grid_scores_:
+    #    print(item)
+    #print(gsearch2.best_params_)
+    #print(gsearch2.best_score_)
+    #print(gsearch2.cv_results_, gsearch2.best_params_, gsearch2.best_score_,'\n')
+    ##-----------------------------Find the best parameters' combination of the model------------------------------
 
-    #scoring = 'accuracy'
-    scoring = 'precision'
-    models = []
-    #models.append(('LR',LogisticRegression()))
-    #models.append(('CART',DecisionTreeClassifier()))
-    ##models.append(('LDA',LinearDiscriminantAnalysis()))
-    #models.append(('KNN',KNeighborsClassifier()))
-    #models.append(('NB',GaussianNB()))
-    models.append(('RF',RandomForestClassifier()))
-    #models.append(('SVM',SVC()))
+    B = 300
+    model = \
+        RandomForestClassifier(
+            n_estimators=B,
+            #criterion='entropy',
+            criterion='gini',
+            #max_depth=None,  # expand until all leaves are pure or contain < MIN_SAMPLES_SPLIT samples
+            max_depth=4,
+            min_samples_split=80,
+            min_samples_leaf=2,
+            min_weight_fraction_leaf=0.0,
+            max_features=None, # number of features to consider when looking for the best split; None: max_features=n_features
+            max_leaf_nodes=None,  # None: unlimited number of leaf nodes
+            bootstrap=True,
+            oob_score=True,  # estimate Out-of-Bag Cross Entropy
+            n_jobs=multiprocessing.cpu_count() - 4,  # paralellize over all CPU cores minus 4
+            class_weight=None,  # our classes are skewed, but but too skewed
+            random_state=RANDOM_SEED,
+            verbose=0,
+            warm_start=False)
 
-    train_results = []
-    names = []
-    for name,model in models:
-        kfold = model_selection.KFold(n_splits=5,random_state=RANDOM_SEED)
-        cv_results = model_selection.cross_val_score(model,X_train,Y_train,scoring=scoring,cv=kfold)
-        train_results.append(cv_results)
-        names.append(name)
-        msg = "%s: %f (%f)" % (name,cv_results.mean(),cv_results.std())
+    kfold = model_selection.KFold(n_splits=5,random_state=RANDOM_SEED)
+    eval_standard = ['accuracy','recall_macro','precision_macro','f1_macro']
+    results = []
+    for scoring in eval_standard:
+        cv_results = model_selection.cross_val_score(model,X_train,y_train,scoring=scoring,cv=kfold)
+        results.append(cv_results)
+        msg = "%s: %f (%f)" % (scoring,cv_results.mean(),cv_results.std())
         print(msg)
-        for item in cv_results:
-            print(item)
+    # Make predictions on validation dataset
+    test_df = pandas.read_csv(test_fullpath,sep=',',na_values='NA',low_memory=False)
+    #for item in test_df.columns.values:
+    #    pandas.to_numeric(test_df[item])
+    X_validation = test_df[attributes]
+    y_validation = test_df[target_key]
+    validation_datapreprocessing = DataPreprocessing(pandas.concat([X_validation,y_validation],axis=1),attributes,target_key)
+    #validation_datapreprocessing.data_summary()
+    X_validation = validation_datapreprocessing.transform_x_to_binary(binary_transform_attrs)
+    X_validation = validation_datapreprocessing.transform_x_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
+    X_validation = validation_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
+    X_validation = validation_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
+    X_validation = validation_datapreprocessing.x_dummies_and_fillna(allnull=True,nullvalue=random.randint(0,2))
+    #validation_datapreprocessing.data_summary()
+    model.fit(X_train,y_train)
+    print('oob_score: %f' % (model.oob_score_))
+    #default evaluation way
+    print('-------------------default evaluation----------------------')
+    #rf_pred_probs = model.predict_proba(X=X_validation)
+    rf_pred_probs = model.predict(X=X_validation)
+    result_probs = numpy.column_stack((rf_pred_probs,y_validation.as_matrix()))
+    #for item in result_probs:
+    #    print(item)
+    print(metrics.confusion_matrix(y_validation, rf_pred_probs))
+    print(metrics.accuracy_score(y_validation, rf_pred_probs))
+    print(metrics.precision_score(y_validation, rf_pred_probs))
+    print(metrics.f1_score(y_validation, rf_pred_probs))
+    print(metrics.classification_report(y_validation, rf_pred_probs))
 
-        X_validation_datapreprocessing = DataPreprocessing(X_validation,attributes,target_key)
-        #X_validation = X_validation_datapreprocessing.transform_to_binary(binary_transform_attrs)
-        #X_validation = X_validation_datapreprocessing.transform_dtype(binary_transform_attrs,d_type=[int],uniform_type=True)
-        X_validation = X_validation_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
-        X_validation = X_validation_datapreprocessing.transform_dtype(area_attrs,d_type=[int],uniform_type=True)
-        X_validation = X_validation_datapreprocessing.dummies_and_fillna()
-        #Y_validation = Y_validation.fillna(value=-1)
-        #Y_validation = Y_validation.fillna(value=random.randint(0,1))
-        low_prob = 1e-6
-        high_prob = 1 - low_prob
-        log_low_prob = numpy.log(low_prob)
-        g_low_prob = numpy.log(low_prob)
-        log_high_prob = numpy.log(high_prob)
-        log_prob_thresholds = numpy.linspace(start=log_low_prob,stop=log_high_prob,num=100)
-        prob_thresholds = numpy.exp(log_prob_thresholds)
+    #self-defined evaluation way
+    print('-------------------self-defined evaluation----------------------')
+    low_prob = 1e-6
+    high_prob = 1 - low_prob
+    log_low_prob = numpy.log(low_prob)
+    g_low_prob = numpy.log(low_prob)
+    log_high_prob = numpy.log(high_prob)
+    log_prob_thresholds = numpy.linspace(start=log_low_prob,stop=log_high_prob,num=100)
+    prob_thresholds = numpy.exp(log_prob_thresholds)
+    rf_pred_probs = model.predict_proba(X=X_validation)
+    #result_probs = numpy.column_stack((rf_pred_probs,y_validation))
+    #for item in result_probs:
+    #    print(item)
+    #for item in rf_pred_probs[:,1]:
+    #    print(item)
 
-        #print(type(X_train.index.values))
-        #for item in sorted(X_train.index.values.tolist()):
-        #    print(item)
-        model.fit(X_train,Y_train)
-        pred_probs = model.predict_proba(X=X_validation)
-        print(pred_probs)
-        model_oos_performance = bin_classif_eval(pred_probs[:,1],Y_validation,pos_cat=1,thresholds=prob_thresholds)
-        recall_threshold = 0.75
-        # print(type(model_oos_performance.recall))
-        # print(model_oos_performance.recall)
-        idx = next(i for i in range(100) if model_oos_performance.recall[i] <= recall_threshold) - 1
-        print("idx = %d" % idx)
-        selected_prob_threshold = prob_thresholds[idx]
-        print("selected_prob_threshold:", selected_prob_threshold)
-        print(model_oos_performance.iloc[idx, :])
-        #for train,test in kfold.split(X_train):
-        #    #print('Train: %s | test: %s' % (train, test))
-        #    #for item in X_train.index.values:
-        #    #    print(item)
-        #    #for train_item in train:
-        #    #    if train_item in X_train.index.values:
-        #    #        print(train_item,' is in index')
-        #    #    else:
-        #    #        print(train_item,' is not in index')
-        #    #    print('train:',train_item)
-        #    #for test_item in test:
-        #    #    print('test:',test_item)
-        #    model.fit(X_train[train],Y_train[train])
-        #    pred_probs = model.predict_proba(X=X_validation)
-        #    print(pred_probs)
-        #    model_oos_performance = bin_classif_eval(pred_probs[:,1],Y_validation,pos_cat=1,thresholds=prob_thresholds)
-        #    recall_threshold = .75
-        #    # print(type(model_oos_performance.recall))
-        #    # print(model_oos_performance.recall)
-        #    idx = next(i for i in range(100) if model_oos_performance.recall[i] <= recall_threshold) - 1
-        #    print("idx = %d" % idx)
-        #    selected_prob_threshold = prob_thresholds[idx]
-        #    print("selected_prob_threshold:", selected_prob_threshold)
-        #    print(model_oos_performance.iloc[idx, :])
+    ## histogram of predicted probabilities
+    ##n,bins,patches = plt.hist(rf_pred_probs[:1],10,normed=1,facecolor='g',alpha=0.75)
+    ##plt.xlabel('Predicted probability of diabetes')
+    ##plt.ylabel('Frequency')
+    ##plt.title('Histogram of predicted probabilities')
+    ###plt.text(60, .025, r'$\mu=100,\ \sigma=15$')
+    ##plt.axis([0,1,0,1])
+    ##plt.grid(True)
 
-        #predictions = model.predict(X_validation)
-        #print(accuracy_score(Y_validation, predictions))
-        #print(confusion_matrix(Y_validation, predictions))
-        #print(classification_report(Y_validation, predictions))
-
+    #print(type(rf_pred_probs))
+    #print(type(rf_pred_probs[:,1]))
+    #print(rf_pred_probs[:,1])
     #fig = plt.figure()
-    #fig.suptitle('Algorithm Comparison')
     #ax = fig.add_subplot(111)
-    #plt.boxplot(results)
-    #ax.set_xticklabels(names)
+    #ax.hist(rf_pred_probs[:,1], bins=20)
+    #plt.xlim(0,1)
+    #plt.title('Histogram of predicted probabilities')
+    #plt.xlabel('Predicted probability of diabetes')
+    #plt.ylabel('Frequency')
     #plt.show()
 
-    # Make predictions on validation dataset
-    #lr = LogisticRegression()
-    #lr.fit(X_train, Y_train)
-    #X_validation_datapreprocessing = DataPreprocessing(X_validation,attributes,target_key)
-    #X_validation = X_validation_datapreprocessing.data_pre_process()
-    #Y_validation = Y_validation.fillna(value=-1)
-    #predictions = lr.predict(X_validation)
-    #print(accuracy_score(Y_validation, predictions))
-    #print(confusion_matrix(Y_validation, predictions))
-    #print(classification_report(Y_validation, predictions))
+    model_oos_performance = bin_classif_eval(rf_pred_probs[:,1],y_validation,pos_cat=1,thresholds=prob_thresholds)
+    #print(type(model_oos_performance))
+    #for item in model_oos_performance.recall:
+    #    print(item)
+    recall_threshold = .44
+    idx = next(i for i in range(100) if model_oos_performance.recall[i] <= recall_threshold) - 1
+    print("idx = %d" % idx)
+    selected_prob_threshold = prob_thresholds[idx]
+    print("selected_prob_threshold:", selected_prob_threshold)
+    print(model_oos_performance.iloc[idx,:])
