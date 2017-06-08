@@ -263,16 +263,36 @@ if __name__ == "__main__":
     X_train = train_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
     X_train = train_datapreprocessing.x_dummies_and_fillna()
     train_datapreprocessing.data_summary()
+
+    Gini_DF = pandas.concat([X_train,y_train],axis=1)
+    #gini_attrs = Gini_DF.axes[1]
+    gini_attrs = list(X_train.columns.values)
+    gini = GiniIndex(Gini_DF,gini_attrs,target_key,Gini_DF[target_key])
+    gini_index_dict = gini.gini_index()
+    gini_list = sorted(gini_index_dict.items(),key=lambda item:item[1])
+    new_attributes = []
+    new_attribues_num = X_train.columns.values
+    i = 0
+    for item in gini_list:
+        #print(type(item))
+        #print(item)
+        if i < new_attribues_num:
+            new_attributes.append(str(item[0]))
+        i = i+1
+    X_train = X_train[new_attributes]
+
     # Begin: smote
     new_train_df = pandas.concat([X_train,y_train],axis=1)
-    smote_processor = Smote(new_train_df[new_train_df[target_key]==1],N=500,k=5)
+    smote_processor = Smote(new_train_df[new_train_df[target_key]==1],N=400,k=5)
     train_df_sample = smote_processor.over_sampling()
     #X_sample,y_sample = smote_processor.over_sampling()
     sample = DataFrame(train_df_sample,columns=new_train_df.columns.values)
     #sample_datapreprocessing = DataPreprocessing(sample,sample.drop(target_key,axis=1,inplace=False).columns.values,target_key)
     #sample_datapreprocessing.data_summary()
-    X_train = sample[X_train.columns.values]
-    y_train = sample[target_key]
+    X_train = pandas.concat([X_train,sample[X_train.columns.values]],axis=0)
+    y_train = pandas.concat([y_train.to_frame().rename(columns={0:target_key}),sample[target_key].to_frame().rename(columns={0:target_key})],axis=0)[target_key]
+    X_train = X_train.reset_index(drop=True)
+    y_train = y_train.reset_index(drop=True)
     merged_train_datapreprocessing = DataPreprocessing(pandas.concat([X_train,y_train],axis=1),attributes,target_key)
     merged_train_datapreprocessing.data_summary()
     # End: smote
@@ -320,16 +340,6 @@ if __name__ == "__main__":
     #X_train.info()
     #print(X_train.head(5))
 
-    #Gini_DF = pandas.concat([X_train,y_train],axis=1)
-    ##gini_attrs = Gini_DF.axes[1]
-    #gini_attrs = list(Gini_DF.columns.values)
-    #gini = GiniIndex(Gini_DF,gini_attrs,target_key,Gini_DF[target_key])
-    #gini_index_dict = gini.gini_index()
-    #gini_list = sorted(gini_index_dict.items(),key=lambda item:item[1])
-    #for item in gini_list:
-    #    print(type(item))
-    #    print(item)
-
     #-----------------------------Find the best parameters' combination of the model------------------------------
     #param_test1 = {'n_estimators': range(20, 600, 20)}
     #gsearch1 = GridSearchCV(estimator=RandomForestClassifier(min_samples_split=200,
@@ -367,7 +377,8 @@ if __name__ == "__main__":
             min_samples_split=80,
             min_samples_leaf=2,
             min_weight_fraction_leaf=0.0,
-            max_features=None, # number of features to consider when looking for the best split; None: max_features=n_features
+            #max_features=None, # number of features to consider when looking for the best split; None: max_features=n_features
+            max_features="sqrt",
             max_leaf_nodes=None,  # None: unlimited number of leaf nodes
             bootstrap=True,
             oob_score=True,  # estimate Out-of-Bag Cross Entropy
@@ -403,6 +414,7 @@ if __name__ == "__main__":
     print('oob_score: %f' % (model.oob_score_))
     #default evaluation way
     print('-------------------default evaluation----------------------')
+    X_validation = X_validation[new_attributes]
     #rf_pred_probs = model.predict_proba(X=X_validation)
     rf_pred_probs = model.predict(X=X_validation)
     result_probs = numpy.column_stack((rf_pred_probs,y_validation.as_matrix()))
@@ -455,7 +467,7 @@ if __name__ == "__main__":
     #print(type(model_oos_performance))
     #for item in model_oos_performance.recall:
     #    print(item)
-    recall_threshold = .44
+    recall_threshold = .74
     idx = next(i for i in range(100) if model_oos_performance.recall[i] <= recall_threshold) - 1
     print("idx = %d" % idx)
     selected_prob_threshold = prob_thresholds[idx]
