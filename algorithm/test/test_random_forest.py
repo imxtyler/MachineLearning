@@ -262,39 +262,39 @@ if __name__ == "__main__":
     X_train = train_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
     X_train = train_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
     X_train = train_datapreprocessing.x_dummies_and_fillna()
-    train_datapreprocessing.data_summary()
+    #train_datapreprocessing.data_summary()
 
-    Gini_DF = pandas.concat([X_train,y_train],axis=1)
-    #gini_attrs = Gini_DF.axes[1]
-    gini_attrs = list(X_train.columns.values)
-    gini = GiniIndex(Gini_DF,gini_attrs,target_key,Gini_DF[target_key])
-    gini_index_dict = gini.gini_index()
-    gini_list = sorted(gini_index_dict.items(),key=lambda item:item[1])
-    new_attributes = []
-    new_attribues_num = X_train.columns.values
-    i = 0
-    for item in gini_list:
-        #print(type(item))
-        #print(item)
-        if i < new_attribues_num:
-            new_attributes.append(str(item[0]))
-        i = i+1
-    X_train = X_train[new_attributes]
+    #Gini_DF = pandas.concat([X_train,y_train],axis=1)
+    ##gini_attrs = Gini_DF.axes[1]
+    #gini_attrs = list(X_train.columns.values)
+    #gini = GiniIndex(Gini_DF,gini_attrs,target_key,Gini_DF[target_key])
+    #gini_index_dict = gini.gini_index()
+    #gini_list = sorted(gini_index_dict.items(),key=lambda item:item[1])
+    #new_attributes = []
+    #new_attribues_num = len(X_train.columns.values)
+    #i = 0
+    #for item in gini_list:
+    #    #print(type(item))
+    #    #print(item)
+    #    if i < new_attribues_num:
+    #        new_attributes.append(str(item[0]))
+    #    i = i+1
+    #X_train = X_train[new_attributes]
 
     # Begin: smote
-    new_train_df = pandas.concat([X_train,y_train],axis=1)
-    smote_processor = Smote(new_train_df[new_train_df[target_key]==1],N=400,k=5)
-    train_df_sample = smote_processor.over_sampling()
-    #X_sample,y_sample = smote_processor.over_sampling()
-    sample = DataFrame(train_df_sample,columns=new_train_df.columns.values)
-    #sample_datapreprocessing = DataPreprocessing(sample,sample.drop(target_key,axis=1,inplace=False).columns.values,target_key)
-    #sample_datapreprocessing.data_summary()
-    X_train = pandas.concat([X_train,sample[X_train.columns.values]],axis=0)
-    y_train = pandas.concat([y_train.to_frame().rename(columns={0:target_key}),sample[target_key].to_frame().rename(columns={0:target_key})],axis=0)[target_key]
-    X_train = X_train.reset_index(drop=True)
-    y_train = y_train.reset_index(drop=True)
-    merged_train_datapreprocessing = DataPreprocessing(pandas.concat([X_train,y_train],axis=1),attributes,target_key)
-    merged_train_datapreprocessing.data_summary()
+    #new_train_df = pandas.concat([X_train,y_train],axis=1)
+    #smote_processor = Smote(new_train_df[new_train_df[target_key]==1],N=400,k=5)
+    #train_df_sample = smote_processor.over_sampling()
+    ##X_sample,y_sample = smote_processor.over_sampling()
+    #sample = DataFrame(train_df_sample,columns=new_train_df.columns.values)
+    ##sample_datapreprocessing = DataPreprocessing(sample,sample.drop(target_key,axis=1,inplace=False).columns.values,target_key)
+    ##sample_datapreprocessing.data_summary()
+    #X_train = pandas.concat([X_train,sample[X_train.columns.values]],axis=0)
+    #y_train = pandas.concat([y_train.to_frame().rename(columns={0:target_key}),sample[target_key].to_frame().rename(columns={0:target_key})],axis=0)[target_key]
+    #X_train = X_train.reset_index(drop=True)
+    #y_train = y_train.reset_index(drop=True)
+    #merged_train_datapreprocessing = DataPreprocessing(pandas.concat([X_train,y_train],axis=1),attributes,target_key)
+    #merged_train_datapreprocessing.data_summary()
     # End: smote
     ## Begin: nearmiss
     #nearmiss_processor = NearMiss(random_state=RANDOM_SEED,n_neighbors=5)
@@ -351,7 +351,7 @@ if __name__ == "__main__":
     #    print(item)
     #print(gsearch1.best_params_)
     #print(gsearch1.best_score_)
-    ##print(gsearch1.grid_scores_, gsearch1.best_params_, gsearch2.best_score_,'\n')
+    #print(gsearch1.grid_scores_, gsearch1.best_params_, gsearch2.best_score_,'\n')
     #print('-----------------------------------------------------------------------------------------------------')
     #param_test2 = {'max_depth': range(2, 16, 2), 'min_samples_split': range(20, 200, 20)}
     #gsearch2 = GridSearchCV(estimator=RandomForestClassifier(n_estimators=300,
@@ -414,17 +414,33 @@ if __name__ == "__main__":
     print('oob_score: %f' % (model.oob_score_))
     #default evaluation way
     print('-------------------default evaluation----------------------')
-    X_validation = X_validation[new_attributes]
-    #rf_pred_probs = model.predict_proba(X=X_validation)
+    #X_validation = X_validation[new_attributes]
     rf_pred_probs = model.predict(X=X_validation)
     result_probs = numpy.column_stack((rf_pred_probs,y_validation.as_matrix()))
     #for item in result_probs:
-    #    print(item)
-    print(metrics.confusion_matrix(y_validation, rf_pred_probs))
-    print(metrics.accuracy_score(y_validation, rf_pred_probs))
-    print(metrics.precision_score(y_validation, rf_pred_probs))
-    print(metrics.f1_score(y_validation, rf_pred_probs))
-    print(metrics.classification_report(y_validation, rf_pred_probs))
+    #  print(item)
+    print("confusion_matrix:\n",metrics.confusion_matrix(y_validation, rf_pred_probs))
+    print("accuracy_score:",metrics.accuracy_score(y_validation, rf_pred_probs))
+    print("recall_score:",metrics.recall_score(y_validation, rf_pred_probs))
+    print("precision_score:",metrics.precision_score(y_validation, rf_pred_probs))
+    print("f1_score:",metrics.f1_score(y_validation, rf_pred_probs))
+    print("roc_auc_score:",metrics.roc_auc_score(y_validation, rf_pred_probs))
+    print("classification_report:\n",metrics.classification_report(y_validation, rf_pred_probs))
+
+    rf_pred_probs = model.predict_proba(X=X_validation)
+    result_probs = numpy.column_stack((rf_pred_probs,y_validation.as_matrix()))
+    #for item in result_probs:
+    #   print(item)
+    result_df = DataFrame(result_probs,columns=['pred_neg','pred_pos','real'])
+    #fpr,tpr,thresholds = metrics.roc_curve(result_df['real'],result_df['pred_pos'],pos_label=2)
+    fpr,tpr,_ = metrics.roc_curve(result_df['real'],result_df['pred_pos'])
+    # good model's auc should > 0.5
+    print("auc:",metrics.auc(fpr,tpr))
+    # good model's ks should > 0.2
+    print("ks:",max(tpr-fpr))
+    # good model's gini should > 0.6
+    print("gini:",2*metrics.auc(fpr,tpr)-1)
+    print("ks:",max(tpr-fpr))
 
     #self-defined evaluation way
     print('-------------------self-defined evaluation----------------------')
