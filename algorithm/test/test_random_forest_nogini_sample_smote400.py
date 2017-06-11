@@ -417,16 +417,32 @@ if __name__ == "__main__":
     #default evaluation way
     print('-------------------default evaluation----------------------')
     #X_validation = X_validation[new_attributes]
-    #rf_pred_probs = model.predict_proba(X=X_validation)
     rf_pred_probs = model.predict(X=X_validation)
     result_probs = numpy.column_stack((rf_pred_probs,y_validation.as_matrix()))
     for item in result_probs:
-        print(item)
-    #print(metrics.confusion_matrix(y_validation, rf_pred_probs))
-    #print(metrics.accuracy_score(y_validation, rf_pred_probs))
-    #print(metrics.precision_score(y_validation, rf_pred_probs))
-    #print(metrics.f1_score(y_validation, rf_pred_probs))
-    #print(metrics.classification_report(y_validation, rf_pred_probs))
+      print(item)
+    print("confusion_matrix:\n",metrics.confusion_matrix(y_validation, rf_pred_probs))
+    print("accuracy_score:",metrics.accuracy_score(y_validation, rf_pred_probs))
+    print("recall_score:",metrics.recall_score(y_validation, rf_pred_probs))
+    print("precision_score:",metrics.precision_score(y_validation, rf_pred_probs))
+    print("f1_score:",metrics.f1_score(y_validation, rf_pred_probs))
+    print("roc_auc_score:",metrics.roc_auc_score(y_validation, rf_pred_probs))
+    print("classification_report:\n",metrics.classification_report(y_validation, rf_pred_probs))
+
+    rf_pred_probs = model.predict_proba(X=X_validation)
+    result_probs = numpy.column_stack((rf_pred_probs,y_validation.as_matrix()))
+    for item in result_probs:
+       print(item)
+    result_df = DataFrame(result_probs,columns=['pred_neg','pred_pos','real'])
+    #fpr,tpr,thresholds = metrics.roc_curve(result_df['real'],result_df['pred_pos'],pos_label=2)
+    fpr,tpr,_ = metrics.roc_curve(result_df['real'],result_df['pred_pos'])
+    # good model's auc should > 0.5
+    print("auc:",metrics.auc(fpr,tpr))
+    # good model's ks should > 0.2
+    print("ks:",max(tpr-fpr))
+    # good model's gini should > 0.6
+    print("gini:",2*metrics.auc(fpr,tpr)-1)
+
 
     #self-defined evaluation way
     print('-------------------self-defined evaluation----------------------')
