@@ -15,7 +15,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from ChicagoBoothML_Helpy.EvaluationMetrics import bin_classif_eval
 
-def data_preprocess(data_path,form=0,attributes=None,target_key=None,to_binary_attrs=None,area_attrs=None,show=True,stats=True,stats_file_path='/tmp',test_size=0.3,random_state=99):
+def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=None,to_binary_attrs=None,area_attrs=None,show=True,stats=True,stats_file_path='/tmp',test_size=0.3,cut_point=0,random_state=99):
     '''
     :param data_path: string, the data's path 
     :param form: int, indicate that what type of data to process:
@@ -23,11 +23,14 @@ def data_preprocess(data_path,form=0,attributes=None,target_key=None,to_binary_a
             1: data has been split to train and test set, two files
             2: data is split to multiple directories, each directory exists one or multiple files
     :param attributes: list of string, labels of X
+    :param all_labels: list of string, labels of data, including all X and y, even the label isn't used, should use when form=2
     :param target_key: string, label of target
     :param to_binary_attrs: list of string, attributes to be converted to binary value:1 or 0
     :param area_attrs: list of string, attributes about china area, like province, city, etc.
     :param show: bool, indicate that the data's summary information should be printed
     :param stats: bool, indicate that the data's detail statistical information should be done 
+    :param stats_file_path: string, the path of statistical files 
+    :param cut_point: int, indicate that which files are used to train model, which files are used to test model, it should be used when form=2 
     :return: composite of DataFrame: X_train,X_test,y_train,y_test 
     '''
     X_train = None
@@ -131,7 +134,72 @@ def data_preprocess(data_path,form=0,attributes=None,target_key=None,to_binary_a
             else:
                 print("Error: please split the data in the directory %s into two files: train and test set, like train_csv.csv, test_csv.csv" % data_path)
         if form == 2:
-            pass
+            dict_files={}
+            files = []
+            for dirpath,dirnames,filenames in os.walk(data_path):
+                for filename in filenames:
+                    file_path = os.path.join(dirpath,filename)
+                    if file_path==(data_path+'/'+filename): #there is noly files, no subdirectory in the directory data_path
+                        files.append(file_path)
+                    else: #there are only subdirectories in the directory data_path, one subdirectory is also included
+                        dict_files.setdefault(dirpath,file_path)
+            if len(dict_files)>0:
+                files_sort_key = sorted(dict_files.items(),key=lambda item:item[0]) # sort by key(dirpath, or subdirectory)
+                for i in range(len(files_sort_key)):
+                    files.append(files_sort_key[i][1])
+            df = []
+            for i in range(len(files)):
+                df.append(pd.read_csv(files[i],header=None,names=all_labels,sep=',',na_values='NA',low_memory=False))
+            all_train_df = None
+            all_test_df = None
+            if cut_point >= len(df):
+                print("Error: the cut_point should be less then ",len(df))
+            for i in range(len(df)):
+                if i<=cut_point:
+                    all_train_df = pd.concat([all_train_df,df[i]],axis=0)
+                else:
+                    all_test_df = pd.concat([all_test_df,df[i]],axis=0)
+            all_train_df = all_train_df.reset_index(drop=True)
+            all_test_df = all_test_df.reset_index(drop=True)
+            X_train = all_train_df[attributes]
+            y_train = all_train_df[target_key]
+            datapreprocessing = DataPreprocessing(pd.concat([X_train,y_train],axis=1),attributes,target_key)
+            if show==True:
+                print("BEFORE DATA PREPROCESS, SUMMARY INFORMATION OF THE TRAINING DATA:")
+            file_path_stats = stats_file_path+'/'+'bef_train_data_statistics.csv'
+            datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
+            if to_binary_attrs is not None:
+                X_train = datapreprocessing.transform_x_to_binary(to_binary_attrs)
+                X_train = datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
+            resource_dir = '../resources'
+            if area_attrs is not None:
+                X_train = datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
+                X_train = datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
+            X_train = datapreprocessing.x_dummies_and_fillna()
+            if show==True:
+                print("AFTER DATA PREPROCESS, SUMMARY INFORMATION OF THE TRAINING DATA:")
+            file_path_stats = stats_file_path+'/'+'aft_train_data_statistics.csv'
+            datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
+
+            X_test = all_test_df[attributes]
+            y_test = all_test_df[target_key]
+            datapreprocessing = DataPreprocessing(pd.concat([X_test,y_test],axis=1),attributes,target_key)
+            if show==True:
+                print("BEFORE DATA PREPROCESS, SUMMARY INFORMATION OF THE TEST DATA:")
+            file_path_stats = stats_file_path+'/'+'bef_test_data_statistics.csv'
+            datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
+            if to_binary_attrs is not None:
+                X_test = datapreprocessing.transform_x_to_binary(to_binary_attrs)
+                X_test = datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
+            resource_dir = '../resources'
+            if area_attrs is not None:
+                X_test = datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
+                X_test = datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
+            X_test = datapreprocessing.x_dummies_and_fillna()
+            if show==True:
+                print("AFTER DATA PREPROCESS, SUMMARY INFORMATION OF THE TEST DATA:")
+            file_path_stats = stats_file_path+'/'+'aft_test_data_statistics.csv'
+            datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
         else:
             pass
     except Exception as e:
@@ -315,27 +383,42 @@ def train_test1(X_train,X_test,y_train,y_test):
     # good model's gini should > 0.6
     print("gini:",2*metrics.auc(fpr,tpr)-1)
 
-
 if __name__ == "__main__":
     pd.set_option('display.max_rows', None)
     attributes_dir = '../resources/attributes'
-    attribute_file_path = attributes_dir+'/'+'user_portrait_info_v1'
+
+    #attribute_file_path = attributes_dir+'/'+'user_portrait_info_v1'
+    #data_path= '/home/login01/Workspaces/python/dataset/module_data_stg2_tt'
+    #data_path= '/home/login01/Workspaces/python/dataset/module_data_stg2'
+
+    #attribute_file_path = attributes_dir+'/'+'user_portrait_info_v1_20170608'
+    #data_path= '/home/login01/Workspaces/python/dataset/module_data_20170608'
+
+    attribute_file_path = attributes_dir+'/'+'user_portrait_info_v2_20170612'
+    data_path= '/home/login01/Workspaces/python/dataset/module_data_stg1_20170612'
+
     attribute_file = open(attribute_file_path,'r')
     attributes = []
+    all_labels = []
     while True:
         line = attribute_file.readline()
         if not line:
             break
         matchObj = re.match(r'\#(.*)',line.strip('\n'),re.M | re.I)
-        if not matchObj:
+        if matchObj:
+            all_labels.append(matchObj.group(1))
+        else:
             attributes.append(line.strip('\n'))
+            all_labels.append(line.strip('\n'))
     target_key="user_own_overdue"
     #target_key="user_own_ninety_overdue_order"
 
-    data_path= '/home/login01/Workspaces/python/dataset/module_data_stg2_tt'
     to_binary_attrs = ['user_live_address','user_rela_name','user_relation','user_rela_phone','user_high_edu','user_company_name']
     area_attrs = ['user_live_province','user_live_city']
-    X_train,X_test,y_train,y_test = data_preprocess(data_path=data_path,form=1,attributes=attributes,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=False)
+    #X_train,X_test,y_train,y_test = data_preprocess(data_path=data_path,form=1,attributes=attributes,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=False)
+    X_train,X_test,y_train,y_test = data_preprocess(data_path=data_path,form=2,attributes=attributes,all_labels=all_labels,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=False,cut_point=6)
+    print(X_train.info())
+    print(X_test.info())
     #train_test(X_train,X_test,y_train,y_test)
     train_test1(X_train,X_test,y_train,y_test)
 
