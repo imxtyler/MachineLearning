@@ -15,14 +15,13 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from ChicagoBoothML_Helpy.EvaluationMetrics import bin_classif_eval
 
-def data_preprocess(data_path,form=0,sub_directories=None,attributes=None,target_key=None,to_binary_attrs=None,area_attrs=None,show=True,stats=True,stats_file_path='/tmp',test_size=0.3,random_state=99):
+def data_preprocess(data_path,form=0,attributes=None,target_key=None,to_binary_attrs=None,area_attrs=None,show=True,stats=True,stats_file_path='/tmp',test_size=0.3,random_state=99):
     '''
     :param data_path: string, the data's path 
     :param form: int, indicate that what type of data to process:
             0: data isn't split to train and test set, one whole file
             1: data has been split to train and test set, two files
             2: data is split to multiple directories, each directory exists one or multiple files
-    :param sub_directories: string or list of string,
     :param attributes: list of string, labels of X
     :param target_key: string, label of target
     :param to_binary_attrs: list of string, attributes to be converted to binary value:1 or 0
