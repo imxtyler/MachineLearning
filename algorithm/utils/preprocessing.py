@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import os
-import pandas
+import csv
+import pandas as pd
+import codecs
 from sklearn.ensemble import RandomForestRegressor
 
 class DataPreprocessing():
@@ -18,16 +20,58 @@ class DataPreprocessing():
         self.key = key
         self.x_df = None
 
-    def data_summary(self):
-        print("number of attributes:%d, number of samples:%d" % (self.attr_num,self.sample_num))
-        print(self.df.info())
-        #print(self.df.describe())
-        print("ratio of null values of each attribute:")
-        print(self.df.isnull().sum()/self.sample_num)
-        print("targe key, size of non-null values:",self.df.groupby(self.key).size())
-        print("targe key, size of negetive values:",(self.sample_num-self.df[self.key].sum()))
-        print("targe key, size of positive values:",self.df[self.key].sum())
-        print("targe key, rate of positive values:",(self.df[self.key].sum()/self.sample_num))
+    def data_summary(self,show=True,stats=True,file_path_stats='/tmp/data_statistics.csv'):
+        '''
+        :param show: bool, indicate that it should print the data's summary information
+        :param stats: bool, indicate whether it does the data's statistical work
+        :param file_path_stats: string, the file full path of statistical file
+        :return:
+        '''
+        if show==True:
+            print("number of attributes:%d, number of samples:%d" % (self.attr_num,self.sample_num))
+            print(self.df.info())
+            #print(self.df.describe())
+            print("ratio of null values of each attribute:")
+            print(self.df.isnull().sum()/self.sample_num)
+            #print("targe key, size of non-null values:",self.df.groupby(self.key).size())
+            print("targe key, size of negetive values:",self.key, (self.sample_num-self.df[self.key].sum()))
+            print("targe key, size of positive values:",self.df[self.key].sum())
+            print("targe key, rate of positive values:",(self.df[self.key].sum()/self.sample_num))
+        else:
+            pass
+        if stats==True:
+            self.value_counts(file_path_stats=file_path_stats)
+        else:
+            pass
+
+    def value_counts(self,output=True,file_path_stats='/tmp/data_statistics.csv'):
+        stats = {}
+        for key in list(self.df.columns.values):
+            #print type(self.df['user_marriage_nan'])
+            stats[key] = self.df[key].value_counts(dropna=False)
+        if output:
+            MAX_LEN = max([len(stats[key].index) for key in self.df.columns])
+            csvfile = open(file_path_stats, 'w')
+            #csvfile.write(codecs.BOM_UTF8)
+            #csvfile.write(codecs.UTF-8)
+            writer = csv.writer(csvfile)
+            header = []
+            for key in self.df.columns:
+                header.append(key)
+                header.append('number')
+            writer.writerow(header)
+            for line in range(MAX_LEN):
+                row = []
+                for key in self.df.columns:
+                    if line < len(stats[key]):
+                        row.append(stats[key].index[line])
+                        row.append(stats[key].values[line])
+                    else:
+                        row.append(' ')
+                        row.append(' ')
+                writer.writerow(row)
+            csvfile.close()
+        return stats
 
     #def set_x_missing_label(self,numberical_attributes,label):
     #    '''
@@ -133,7 +177,7 @@ class DataPreprocessing():
         '''
         dummies_attrs = []
         for item in attributes:
-            dummies_item = pandas.get_dummies(self.df[item],prefix=item)
+            dummies_item = pd.get_dummies(self.df[item],prefix=item)
             dummies_attrs.append(dummies_item)
 
         if self.key in (list(self.df.columns.values)):
@@ -206,9 +250,9 @@ class DataPreprocessing():
         break_points.append(maxval)
         if not labels:
             labels = range(len(break_points)-1)
-        #attr_bin = pandas.cut(self.df[attribute],bins=break_points,labels=labels,right=False)
-        #attr_bin = pandas.qcut(self.df[attribute],bin_num)
-        attr_bin = pandas.cut(self.df[attribute],bins=break_points,labels=labels,include_lowest=True)
+        #attr_bin = pd.cut(self.df[attribute],bins=break_points,labels=labels,right=False)
+        #attr_bin = pd.qcut(self.df[attribute],bin_num)
+        attr_bin = pd.cut(self.df[attribute],bins=break_points,labels=labels,include_lowest=True)
 
         return attr_bin
 
@@ -242,9 +286,9 @@ class DataPreprocessing():
         numberical_attrs,nonnumberical_attrs = self.filter_numberical_attr()
         self.x_df,dummies_attrs = self.transform_x_to_dummies(nonnumberical_attrs)
         for item in dummies_attrs:
-            self.x_df = pandas.concat([self.x_df,item],axis=1)
+            self.x_df = pd.concat([self.x_df,item],axis=1)
         self.x_df.drop(nonnumberical_attrs,axis=1,inplace=True)
-        self.df = pandas.concat([self.x_df,self.df[self.key]],axis=1)
+        self.df = pd.concat([self.x_df,self.df[self.key]],axis=1)
         self.x_df = self.set_x_missing_label_mean(list(self.df.columns),allnull=allnull,nullvalue=nullvalue)
 
         return self.x_df
