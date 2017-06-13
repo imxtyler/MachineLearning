@@ -35,9 +35,9 @@ user_own_fpd_overdue_order
 #user_own_ninety_overdue_order
 user_own_sixty_overdue_order
 user_own_thirty_overdue_order
-user_own_ninety_overdue_num
-user_own_sixty_overdue_num
-user_own_thirty_overdue_num
+#user_own_ninety_overdue_num
+#user_own_sixty_overdue_num
+#user_own_thirty_overdue_num
 user_credit_ninety_overdue
 user_loan_pass
 user_loan_amount
