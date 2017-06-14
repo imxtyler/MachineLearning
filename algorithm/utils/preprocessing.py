@@ -62,7 +62,7 @@ class DataCheck():
         self.attributes = attributes
         self.key = key
 
-    def check_type(self,strategy="null"):
+    def check_type(self):
         '''
         :param strategy: string, the strategy to process the abnormal type, it should be in {"null","mean","discard"}
         :return: 
@@ -72,25 +72,18 @@ class DataCheck():
                 if (is_dtype_numberical(self.df[item].dtype)):
                     pass
                 else:
-                    is_abnormal,col_type = self.check_and_determine_col_type(list(self.df[item]))
-                    print(is_abnormal)
-                    print(strategy)
-                    print(item,self.df[item].dtype)
+                    is_abnormal,col_type = self.check_and_choose_col_type(list(self.df[item]),item)
                     if is_abnormal == True:
-                        print(col_type)
-                        if col_type == float:
-                            print('processing')
-                            self.df[item] = self.df[item].apply(self.convert_to_float(strategy))
+                        if col_type is float:
+                            #self.df[item] = self.df[item].apply(self.convert_to_float(strategy))
+                            #self.df[item] = self.df[item].map(self.convert_to_float(strategy))
+                            self.df[item] = self.df[item].apply(self.convert_to_float)
                         else:
                             pass
                     else:
                         pass
         except Exception as e:
             print(e)
-
-        print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-        for item in self.df['user_last_consume'].values:
-            print(item)
 
         #return self.df
 
@@ -109,7 +102,7 @@ class DataCheck():
 
         return (matchI == True or matchF == True)
 
-    def check_and_determine_col_type(self,col):
+    def check_and_choose_col_type(self,col=[],col_name=None):
         '''
         :param col:list
         :return: is_abnormal:bool, indicate that there is abnormal value type or not
@@ -118,16 +111,18 @@ class DataCheck():
         num_cnt = 0
         str_cnt = 0
         obj_cnt = 0
+        nan_cnt = 0
         for item in col:
             if self.is_numberical_type(item):
                 num_cnt = num_cnt+1
-            elif type(item) == str:
+            elif isinstance(item,str):
                 str_cnt = str_cnt+1
+            elif np.isnan(item):
+                nan_cnt = nan_cnt+1
             else:
                 obj_cnt = obj_cnt+1
         type_list = [num_cnt,str_cnt,obj_cnt]
-        print(type_list)
-        is_abnormal = ((num_cnt==len(col) or str_cnt==len(col) or obj_cnt==len(col))==False)
+        is_abnormal = (((num_cnt+nan_cnt)==len(col) or (str_cnt+nan_cnt)==len(col) or (obj_cnt+nan_cnt)==len(col))==False)
         if num_cnt == max(type_list):
             return is_abnormal,float
         if str_cnt == max(type_list):
@@ -146,8 +141,8 @@ class DataCheck():
         else:
             if strategy == "null":
                 item = np.nan
-            if strategy == "mean":
-                pass #fixme
+            #if strategy == "mean":
+            #    pass #fixme
 
         return item
 
