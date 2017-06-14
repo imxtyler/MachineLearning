@@ -1,11 +1,155 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import re
 import os
 import csv
+import numpy as np
 import pandas as pd
 import codecs
 from sklearn.ensemble import RandomForestRegressor
+
+#float regex pattern
+float_regex_patterns = [
+    r'[-+][0-9]+\.[0-9]+[eE][-+]?[0-9]+',
+    r'[-+][0-9]+\.[0-9]+',
+    r'\A[-+]?[0-9]+\.[0-9]+\Z',
+    r'\A[-+]?[0-9]*\.[0-9]+\Z',
+    r'\A[-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)\Z',
+    r'\A[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)\Z',
+    r'\A[-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][-+]?[0-9]+)?\Z',
+    r'\A[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][-+]?[0-9]+)?\Z',
+    r'\A[-+]?(\b[0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][-+]?[0-9]+\b)?\Z'
+    ]
+#int regex pattern
+int_regex_patterns = [
+    r'[-+][0-9]+[eE][+]?[0-9]+',
+    r'[-+][0-9]+',
+    r'\A[-+]?[0-9]+\Z',
+    r'\A[-+]?[0-9]*[0-9]+\Z',
+    r'\A[-+]?[0-9]+([eE][+]?[0-9]+)?\Z',
+    r'\A[+-]?\b[0-9]+\b\Z',
+    r'\A[-+]?\b[0-9]+([eE][+]?[0-9]+\b)?\Z',
+    r'(?:^|(?<=\s))[0-9]+(?=$|\s)',
+    r'([+-] *)\b[0-9]+\b'
+    ]
+
+number_type = [np.int,np.int8,np.int16,np.int32,np.int64,
+               np.float,np.float16,np.float32,np.float64,np.float128,
+               np.double]
+def is_dtype_numberical(x):
+    '''
+    :param x: the dtype that need to be judge whether it is numberical 
+    :return: boolean
+    '''
+    try:
+        if x in number_type:
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(e)
+        return False
+
+class DataCheck():
+    def __init__(self,df,attributes,key):
+        '''
+        :param df: the dataframe containing the attriute and target
+        :param key: the target's label in the classification problem
+        '''
+        self.sample_num,self.attr_num = df.shape
+        self.df = df
+        self.attributes = attributes
+        self.key = key
+
+    def check_type(self,strategy="null"):
+        '''
+        :param strategy: string, the strategy to process the abnormal type, it should be in {"null","mean","discard"}
+        :return: 
+        '''
+        try:
+            for item in self.attributes:
+                if (is_dtype_numberical(self.df[item].dtype)):
+                    pass
+                else:
+                    is_abnormal,col_type = self.check_and_determine_col_type(list(self.df[item]))
+                    print(is_abnormal)
+                    print(strategy)
+                    print(item,self.df[item].dtype)
+                    if is_abnormal == True:
+                        print(col_type)
+                        if col_type == float:
+                            print('processing')
+                            self.df[item] = self.df[item].apply(self.convert_to_float(strategy))
+                        else:
+                            pass
+                    else:
+                        pass
+        except Exception as e:
+            print(e)
+
+        print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+        for item in self.df['user_last_consume'].values:
+            print(item)
+
+        #return self.df
+
+    def check_value(self):
+        pass
+
+    def is_numberical_type(self,item):
+        matchF = False
+        matchI = False
+        for pattern in float_regex_patterns:
+            matchO = re.match(pattern, str(item), re.M | re.I)
+            matchF = matchF or (matchO is not None)
+        for pattern in int_regex_patterns:
+            matchO = re.match(pattern, str(item), re.M | re.I)
+            matchI = matchI or (matchO is not None)
+
+        return (matchI == True or matchF == True)
+
+    def check_and_determine_col_type(self,col):
+        '''
+        :param col:list
+        :return: is_abnormal:bool, indicate that there is abnormal value type or not
+                 type, the data type that the column should be
+        '''
+        num_cnt = 0
+        str_cnt = 0
+        obj_cnt = 0
+        for item in col:
+            if self.is_numberical_type(item):
+                num_cnt = num_cnt+1
+            elif type(item) == str:
+                str_cnt = str_cnt+1
+            else:
+                obj_cnt = obj_cnt+1
+        type_list = [num_cnt,str_cnt,obj_cnt]
+        print(type_list)
+        is_abnormal = ((num_cnt==len(col) or str_cnt==len(col) or obj_cnt==len(col))==False)
+        if num_cnt == max(type_list):
+            return is_abnormal,float
+        if str_cnt == max(type_list):
+            return is_abnormal,str
+        if obj_cnt == max(type_list):
+            return is_abnormal,object
+
+    def convert_to_float(self,item,strategy="null"):
+        '''
+        :param strategy: string, the strategy to process the abnormal type, it should be in {"null","mean"}
+        :param item: 
+        :return: 
+        '''
+        if self.is_numberical_type(item):
+            float(item)
+        else:
+            if strategy == "null":
+                item = np.nan
+            if strategy == "mean":
+                pass #fixme
+
+        return item
 
 class DataPreprocessing():
     def __init__(self,df,attributes,key):
@@ -126,9 +270,11 @@ class DataPreprocessing():
     def filter_numberical_attr(self):
         numberical_attrs = []
         nonnumberical_attrs = []
+        #df._get_numeric_data().columns # another way
+        #list(set(cols) - set(num_cols)) # another way
         try:
             for item in self.attributes:
-                if (self.is_dtype_numberical(self.df[item].dtype)):
+                if (is_dtype_numberical(self.df[item].dtype)):
                     numberical_attrs.append(item)
                 else:
                     nonnumberical_attrs.append(item)
@@ -136,17 +282,6 @@ class DataPreprocessing():
         except Exception as e:
             print(e)
             return numberical_attrs,nonnumberical_attrs
-
-    def is_dtype_numberical(self,x):
-        '''
-        :param x: the dtype that need to be judge whether it is float
-        :return: boolean
-        '''
-        try:
-            return (x=='int32') or (x=='int64') or (x=='float32') or (x=='float64')
-        except Exception as e:
-            print(e)
-            return False
 
     def transform_x_dtype(self,attributes,d_type,uniform_type=False):
         '''
