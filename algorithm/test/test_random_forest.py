@@ -8,8 +8,7 @@ import pandas as pd
 import multiprocessing
 import matplotlib.pyplot as plt
 from pandas import DataFrame,Series
-from preprocessing import DataPreprocessing
-from data_check import DataCheck
+from preprocessing import DataCheck,DataPreprocessing
 from sklearn import metrics
 from sklearn import model_selection
 from sklearn.ensemble import RandomForestClassifier
@@ -162,11 +161,48 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
                     all_test_df = pd.concat([all_test_df,df[i]],axis=0)
             all_train_df = all_train_df.reset_index(drop=True)
             all_test_df = all_test_df.reset_index(drop=True)
+            #dtypeCount = [all_train_df['user_last_consume'].iloc[:, i].apply(type).value_counts() for i in range(all_train_df.shape[1])]
+            #for col in all_train_df.columns:
+            #    dtypeCount = [all_train_df.iloc[:, i].apply(type).value_counts() for i in range(all_train_df.shape[1])]
+            #dtypeCount = [all_train_df.iloc[:, i].apply(type).value_counts() for i in range(all_train_df.shape[1])]
+            #flag = False
+            #for item in dtypeCount:
+            #    matchN = re.match(r'(.*)Name(.*)',str(item),re.M | re.I)
+            #    if matchN:
+            #        print(str(item))
+            #    #print('O:', type(item), str(item).strip('\n'))
+            #    #print('A:', str(item)[23:])
+            #    #print('B:',item.index)
+            #    #print('C:',item.values)
+            #    #print('D:',item.T)
+            #    if flag:
+            #        print(item)
+            #        matchN = re.match(r'(.*)Name:(.*)',str(item),re.M | re.I)
+            #        if matchN:
+            #            flag = False
+            #    matchObj = re.match(r'(.*)Name: user_last_consume(.*)',str(item),re.M | re.I)
+            #    if matchObj:
+            #        flag = True
+            #        print(item)
+            #    #print(len(item))
+            #    #print(item)
+            #    #for entry in item:
+            #    #    print(entry)
+            #    #if item[0] == 'user_last_consume':
+            #    #    print(item)
             #file_path_stats = stats_file_path+'/'+'bef_train_data_statistics.csv'
             #train_datacheck = DataCheck(info=all_train_df,file_path_stats=file_path_stats)
             #train_datacheck.check()
             #test_datacheck = DataCheck(info=all_test_df,file_path_stats=file_path_stats)
             #test_datacheck.check()
+            print("before-------------")
+            #for item in all_train_df['user_last_consume'].values:
+            #    print(item)
+            train_datacheck = DataCheck(all_train_df,attributes,target_key)
+            train_datacheck.check_type()
+            print("after-------------")
+            #for item in all_train_df['user_last_consume'].values:
+            #    print(item)
             X_train = all_train_df[attributes]
             y_train = all_train_df[target_key]
             datapreprocessing = DataPreprocessing(pd.concat([X_train,y_train],axis=1),attributes,target_key)
@@ -422,9 +458,9 @@ if __name__ == "__main__":
     to_binary_attrs = ['user_live_address','user_rela_name','user_relation','user_rela_phone','user_high_edu','user_company_name']
     area_attrs = ['user_live_province','user_live_city']
     #X_train,X_test,y_train,y_test = data_preprocess(data_path=data_path,form=1,attributes=attributes,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=False)
-    X_train,X_test,y_train,y_test = data_preprocess(data_path=data_path,form=2,attributes=attributes,all_labels=all_labels,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=True,cut_point=6)
+    X_train,X_test,y_train,y_test = data_preprocess(data_path=data_path,form=2,attributes=attributes,all_labels=all_labels,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=False,cut_point=6)
     #print(X_train.info())
     #print(X_test.info())
     #train_test(X_train,X_test,y_train,y_test)
-    train_test1(X_train,X_test,y_train,y_test)
+    #train_test1(X_train,X_test,y_train,y_test)
 
