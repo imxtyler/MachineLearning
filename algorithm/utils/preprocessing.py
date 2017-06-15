@@ -52,113 +52,14 @@ def is_dtype_numberical(x):
         return False
 
 class DataCheck():
-    def __init__(self,df,attributes,key):
+    def __init__(self,df,key):
         '''
         :param df: the dataframe containing the attriute and target
         :param key: the target's label in the classification problem
         '''
         self.sample_num,self.attr_num = df.shape
         self.df = df
-        self.attributes = attributes
         self.key = key
-
-    def check_type(self):
-        '''
-        :param strategy: string, the strategy to process the abnormal type, it should be in {"null","mean","discard"}
-        :return: 
-        '''
-        try:
-            for item in self.attributes:
-                if (is_dtype_numberical(self.df[item].dtype)):
-                    pass
-                else:
-                    is_abnormal,col_type = self.check_and_choose_col_type(list(self.df[item]),item)
-                    if is_abnormal == True:
-                        if col_type is float:
-                            #self.df[item] = self.df[item].apply(self.convert_to_float(strategy))
-                            #self.df[item] = self.df[item].map(self.convert_to_float(strategy))
-                            self.df[item] = self.df[item].apply(self.convert_to_float)
-                            self.df[item] = self.df[item].astype(float)
-                        else:
-                            pass
-                    else:
-                        pass
-        except Exception as e:
-            print(e)
-
-        #return self.df
-
-    def check_value(self):
-        pass
-
-    def is_numberical_type(self,item):
-        matchF = False
-        matchI = False
-        for pattern in float_regex_patterns:
-            matchO = re.match(pattern, str(item), re.M | re.I)
-            matchF = matchF or (matchO is not None)
-        for pattern in int_regex_patterns:
-            matchO = re.match(pattern, str(item), re.M | re.I)
-            matchI = matchI or (matchO is not None)
-
-        return (matchI == True or matchF == True)
-
-    def check_and_choose_col_type(self,col=[],col_name=None):
-        '''
-        :param col:list
-        :return: is_abnormal:bool, indicate that there is abnormal value type or not
-                 type, the data type that the column should be
-        '''
-        num_cnt = 0
-        str_cnt = 0
-        obj_cnt = 0
-        nan_cnt = 0
-        for item in col:
-            if self.is_numberical_type(item):
-                num_cnt = num_cnt+1
-            elif isinstance(item,str):
-                str_cnt = str_cnt+1
-            elif np.isnan(item):
-                nan_cnt = nan_cnt+1
-            else:
-                obj_cnt = obj_cnt+1
-        type_list = [num_cnt,str_cnt,obj_cnt]
-        is_abnormal = (((num_cnt+nan_cnt)==len(col) or (str_cnt+nan_cnt)==len(col) or (obj_cnt+nan_cnt)==len(col))==False)
-        if num_cnt == max(type_list):
-            return is_abnormal,float
-        if str_cnt == max(type_list):
-            return is_abnormal,str
-        if obj_cnt == max(type_list):
-            return is_abnormal,object
-
-    def convert_to_float(self,item,strategy="null"):
-        '''
-        :param strategy: string, the strategy to process the abnormal type, it should be in {"null","mean"}
-        :param item: 
-        :return: 
-        '''
-        if self.is_numberical_type(item):
-            float(item)
-        else:
-            if strategy == "null":
-                item = np.nan
-            if strategy == "mean":
-                pass #fixme
-
-        return item
-
-class DataPreprocessing():
-    def __init__(self,df,attributes,key):
-        '''
-        :param df: the dataframe containing the attriute and target
-        :param attributes: the X's attributes that need to be calculated the gini score and is type 1
-        :param key: the target's label in the classification problem
-        '''
-        self.sample_num,self.attr_num = df.shape
-        self.df = df
-        self.attributes = attributes
-        self.key = key
-        self.x_df = None
 
     def data_summary(self,show=True,stats=True,file_path_stats='/tmp/data_statistics.csv'):
         '''
@@ -213,6 +114,123 @@ class DataPreprocessing():
             csvfile.close()
         return stats
 
+    def check_type(self,show=True,stats=True,file_path_stats='/tmp/data_statistics.csv'):
+        '''
+        :param file_path_stats: string, the file full path of statistical file
+        :return self.df: DataFrame
+        '''
+        self.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
+        abnormal_lst = []
+        try:
+            for item in self.df.columns:
+                if (is_dtype_numberical(self.df[item].dtype)):
+                    pass
+                else:
+                    is_abnormal,col_type = self.check_and_choose_col_type(list(self.df[item]))
+                    if is_abnormal == True:
+                        abnormal_lst.append(item)
+                        if col_type is float:
+                            #self.df[item] = self.df[item].apply(self.convert_to_float)
+                            self.df[item] = self.df[item].map(self.convert_to_float)
+                            self.df[item] = self.df[item].astype(float)
+                        else:
+                            pass
+                    else:
+                        pass
+        except Exception as e:
+            print(e)
+        abnormal_col_str = ','.join(abnormal_lst)
+        print("The columns "+abnormal_col_str+" have abnormal type value, please see the statistical file:",file_path_stats)
+
+        return self.df
+
+    def check_value(self):
+        pass
+
+    def is_numberical_type(self,item):
+        matchF = False
+        matchI = False
+        for pattern in float_regex_patterns:
+            matchO = re.match(pattern, str(item), re.M | re.I)
+            matchF = matchF or (matchO is not None)
+        for pattern in int_regex_patterns:
+            matchO = re.match(pattern, str(item), re.M | re.I)
+            matchI = matchI or (matchO is not None)
+
+        return (matchI == True or matchF == True)
+
+    def check_and_choose_col_type(self,col=[]):
+        '''
+        :param col:list
+        :return: is_abnormal:bool, indicate that there is abnormal value type or not
+                 type, the data type that the column should be
+        '''
+        num_cnt = 0
+        str_cnt = 0
+        obj_cnt = 0
+        nan_cnt = 0
+        for item in col:
+            if self.is_numberical_type(item):
+                num_cnt = num_cnt+1
+            elif isinstance(item,str):
+                str_cnt = str_cnt+1
+            elif np.isnan(item):
+                nan_cnt = nan_cnt+1
+            else:
+                obj_cnt = obj_cnt+1
+        type_list = [num_cnt,str_cnt,obj_cnt]
+        is_abnormal = (((num_cnt+nan_cnt)==len(col) or (str_cnt+nan_cnt)==len(col) or (obj_cnt+nan_cnt)==len(col))==False)
+        if num_cnt == max(type_list):
+            return is_abnormal,float
+        if str_cnt == max(type_list):
+            return is_abnormal,str
+        if obj_cnt == max(type_list):
+            return is_abnormal,object
+
+    def convert_to_float(self,item,strategy="null"):
+        '''
+        :param strategy: string, the strategy to process the abnormal type, it should be in {"null","mean"}
+        :param item: 
+        :return: 
+        '''
+        if self.is_numberical_type(item):
+            float(item)
+        else:
+            if strategy == "null":
+                item = np.nan
+            if strategy == "mean":
+                pass #fixme
+
+        return item
+
+class DataPreprocessing():
+    def __init__(self,df,attributes,key):
+        '''
+        :param df: the dataframe containing the attriute and target
+        :param attributes: list, the X's attributes that need to be calculated the gini score and is type 1
+        :param key: the target's label in the classification problem
+        '''
+        self.sample_num,self.attr_num = df.shape
+        self.df = df
+        self.attributes = attributes
+        self.key = key
+        self.x_df = None
+
+    def discard_trivial_attrs(self,null_ratio_threshold=0.95):
+        '''
+        :param null_ratio_threshold: the threshold that one attribute's null value ratio 
+        :return: DataFrame, self.df 
+        '''
+        attr_null_ratio = self.df.isnull().sum()/self.sample_num
+        dict_attr_null_ratio = dict(zip(self.df.columns.values,attr_null_ratio.values))
+        for key,val in dict_attr_null_ratio.items():
+            if val > null_ratio_threshold:
+                self.df.drop(key,axis=1,inplace=True)
+                if self.attributes is not None and key in self.attributes:
+                    self.attributes = self.attributes.remove(key)
+
+        return self.df
+
     #def set_x_missing_label(self,numberical_attributes,label):
     #    '''
     #    :param numberical_attributes: the numberical attributes that need to be calculated
@@ -240,10 +258,10 @@ class DataPreprocessing():
 
     #    return self.df,rfr
 
-    def set_x_missing_label_mean(self,attributes,allnull=False,nullvalue=-1):
+    def set_x_null_attr_mean(self,attributes,allnull=False,nullvalue=-1):
         '''
         :param attributes: the attributes who's null value need to be filled with mean value
-        :param allnull: bool, sign that if need to process the attribute whose value is all null
+        :param allnull: bool, indicate that if need to process the attribute whose value is all null
         :param nullvalue: the value that using fill the attribute whose value is all null
         '''
         for attr in attributes:
@@ -263,12 +281,13 @@ class DataPreprocessing():
             self.x_df = self.df
         return self.x_df
 
-    def filter_numberical_attr(self):
+    def filter_numberical_attrs(self):
         numberical_attrs = []
         nonnumberical_attrs = []
         #df._get_numeric_data().columns # another way
         #list(set(cols) - set(num_cols)) # another way
         try:
+            print(self.attributes)
             for item in self.attributes:
                 if (is_dtype_numberical(self.df[item].dtype)):
                     numberical_attrs.append(item)
@@ -306,16 +325,16 @@ class DataPreprocessing():
         '''
         :param attributes: the attributes that need to be transformed to dummies
         '''
-        dummies_attrs = []
+        dummies_df_lst = []
         for item in attributes:
             dummies_item = pd.get_dummies(self.df[item],prefix=item)
-            dummies_attrs.append(dummies_item)
+            dummies_df_lst.append(dummies_item)
 
         if self.key in (list(self.df.columns.values)):
             self.x_df = self.df.drop(self.key,axis=1,inplace=False)
         else:
             self.x_df = self.df
-        return self.x_df,dummies_attrs
+        return self.x_df,dummies_df_lst
 
     def transform_x_to_binary(self,attributes):
         '''
@@ -414,12 +433,17 @@ class DataPreprocessing():
         pass  # fixme
 
     def x_dummies_and_fillna(self,allnull=False,nullvalue=-1):
-        numberical_attrs,nonnumberical_attrs = self.filter_numberical_attr()
-        self.x_df,dummies_attrs = self.transform_x_to_dummies(nonnumberical_attrs)
-        for item in dummies_attrs:
+        numberical_attrs,nonnumberical_attrs = self.filter_numberical_attrs()
+        self.x_df,dummies_df_lst = self.transform_x_to_dummies(nonnumberical_attrs)
+        for item in dummies_df_lst:
             self.x_df = pd.concat([self.x_df,item],axis=1)
-        self.x_df.drop(nonnumberical_attrs,axis=1,inplace=True)
+        #self.x_df.drop(nonnumberical_attrs,axis=1,inplace=True)
+        for item in nonnumberical_attrs:
+            self.x_df.drop(str(item),axis=1,inplace=True)
+        print("aaaaaaaaaaaaaa")
         self.df = pd.concat([self.x_df,self.df[self.key]],axis=1)
-        self.x_df = self.set_x_missing_label_mean(list(self.df.columns),allnull=allnull,nullvalue=nullvalue)
+        #self.df = pd.concat([self.df[self.key],self.x_df],axis=1)
+        #self.df = self.x_df # fixme, maybe this is one bug of pandas, if the last column's name of self.x_df is end of chinese character, it will report error about the chinese character
+        self.x_df = self.set_x_null_attr_mean(list(self.df.columns),allnull=allnull,nullvalue=nullvalue)
 
         return self.x_df
