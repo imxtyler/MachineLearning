@@ -142,8 +142,8 @@ class DataCheck():
         else:
             if strategy == "null":
                 item = np.nan
-            #if strategy == "mean":
-            #    pass #fixme
+            if strategy == "mean":
+                pass #fixme
 
         return item
 
