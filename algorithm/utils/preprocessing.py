@@ -78,6 +78,7 @@ class DataCheck():
                             #self.df[item] = self.df[item].apply(self.convert_to_float(strategy))
                             #self.df[item] = self.df[item].map(self.convert_to_float(strategy))
                             self.df[item] = self.df[item].apply(self.convert_to_float)
+                            self.df[item] = self.df[item].astype(float)
                         else:
                             pass
                     else:
