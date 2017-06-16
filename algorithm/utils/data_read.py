@@ -2,10 +2,7 @@
 #-*- coding:utf-8 -*-
 
 import os
-import re
-import numpy as np
 import pandas as pd
-from preprocessing import DataCheck,DataPreprocessing
 from sklearn import model_selection
 
 #def data_read(data_path,form=0,attributes=None,all_labels=None,target_key=None,test_size=0.3,cut_point=0,random_state=99):
