@@ -6,6 +6,7 @@ import re
 import numpy as np
 import pandas as pd
 import multiprocessing
+import data_read
 import matplotlib.pyplot as plt
 from pandas import DataFrame,Series
 from preprocessing import DataCheck,DataPreprocessing
@@ -17,7 +18,7 @@ from ChicagoBoothML_Helpy.EvaluationMetrics import bin_classif_eval
 
 def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=None,to_binary_attrs=None,area_attrs=None,show=True,stats=True,stats_file_path='/tmp',test_size=0.3,cut_point=0,random_state=99):
     '''
-    :param data_path: string, the data's path 
+    :param data_path: string, the data's path
     :param form: int, indicate that what type of data to process:
             0: data isn't split to train and test set, one whole file
             1: data has been split to train and test set, two files
@@ -28,192 +29,68 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
     :param to_binary_attrs: list of string, attributes to be converted to binary value:1 or 0
     :param area_attrs: list of string, attributes about china area, like province, city, etc.
     :param show: bool, indicate that the data's summary information should be printed
-    :param stats: bool, indicate that the data's detail statistical information should be done 
-    :param stats_file_path: string, the path of statistical files 
-    :param cut_point: int, indicate that which files are used to train model, which files are used to test model, it should be used when form=2 
-    :return: composite of DataFrame: X_train,X_test,y_train,y_test 
+    :param stats: bool, indicate that the data's detail statistical information should be done
+    :param stats_file_path: string, the path of statistical files
+    :param test_size: float, the size ratio of test
+    :param cut_point: int, indicate that which files are used to train model, which files are used to test model, it should be used when form=2
+    :param random_state: int, random state
+    :return: composite of DataFrame: X_train,X_test,y_train,y_test
     '''
     X_train = None
     y_train = None
     X_test = None
     y_test = None
     try:
-        if form == 0:
-            for dirpath,dirnames,filenames in os.walk(data_path):
-                # for dirname in dirnames:
-                #    print dirname
-                for filename in filenames:
-                    file_path = os.path.join(dirpath,filename)
-                    print(file_path)
-            data_df = pd.read_csv(file_path,sep=',',na_values='NA',low_memory=False)
-            #for item in data_df.columns.values:
-            #    pd.to_numeric(df[item])
-            if attributes is None:
-                attributes = list(data_df.columns.values)
-            datacheck = DataCheck(data_df,attributes,target_key)
-            datacheck.check_type()
-            X = data_df[attributes]
-            y = data_df[target_key]
-            datapreprocessing = DataPreprocessing(pd.concat([X,y],axis=1),attributes,target_key)
-            if show==True:
-                print("BEFORE DATA PREPROCESS, SUMMARY INFORMATION OF THE DATA:")
-            file_path_stats = stats_file_path+'/'+'bef_data_statistics.csv'
-            datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
-            if to_binary_attrs is not None:
-                X = datapreprocessing.transform_x_to_binary(to_binary_attrs)
-                X = datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
-            resource_dir = '../resources'
-            if area_attrs is not None:
-                X = datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
-                X = datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
-            X = datapreprocessing.x_dummies_and_fillna()
-            if show==True:
-                print("AFTER DATA PREPROCESS, SUMMARY INFORMATION OF THE DATA:")
-            file_path_stats = stats_file_path+'/'+'aft_data_statistics.csv'
-            datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
-            print("Please see the statistical files in directory %s" % stats_file_path)
-            X_train,X_test,y_train,y_test = model_selection.train_test_split(X,y,test_size=test_size,random_state=random_state)
-        if form == 1:
-            files=[]
-            for dirpath,dirnames,filenames in os.walk(data_path):
-                for filename in filenames:
-                    file_path = os.path.join(dirpath,filename)
-                    files.append(file_path)
-            if len(files) == 2:
-                for file in files:
-                    if not isinstance(file,str):
-                        print("Error: files parameter should be string list type")
-                train_df = pd.read_csv(files[0],sep=',',na_values='NA',low_memory=False)
-                #for item in train_df.columns.values:
-                #    pd.to_numeric(df[item])
-                if attributes is None:
-                    attributes = list(train_df.columns.values)
-                train_datacheck = DataCheck(train_df,attributes,target_key)
-                train_datacheck.check_type()
-                X_train = train_df[attributes]
-                y_train = train_df[target_key]
-                datapreprocessing = DataPreprocessing(pd.concat([X_train,y_train],axis=1),attributes,target_key)
-                if show==True:
-                    print("BEFORE DATA PREPROCESS, SUMMARY INFORMATION OF THE TRAINING DATA:")
-                file_path_stats = stats_file_path+'/'+'bef_train_data_statistics.csv'
-                datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
-                if to_binary_attrs is not None:
-                    X_train = datapreprocessing.transform_x_to_binary(to_binary_attrs)
-                    X_train = datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
-                resource_dir = '../resources'
-                if area_attrs is not None:
-                    X_train = datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
-                    X_train = datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
-                X_train = datapreprocessing.x_dummies_and_fillna()
-                if show==True:
-                    print("AFTER DATA PREPROCESS, SUMMARY INFORMATION OF THE TRAINING DATA:")
-                file_path_stats = stats_file_path+'/'+'aft_train_data_statistics.csv'
-                datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
+        df,train,test = data_read.data_read(data_path,form,all_labels,test_size,cut_point,random_state)
+        if attributes is None:
+            attributes = list(df.columns.values)
+        if show==True:
+            print("BEFORE DATA PREPROCESS, SUMMARY INFORMATION OF THE DATA:")
+        file_path_stats = stats_file_path+'/'+'bef_data_statistics.csv'
 
-                test_df = pd.read_csv(files[1],sep=',',na_values='NA',low_memory=False)
-                #for item in test_df.columns.values:
-                #    pd.to_numeric(df[item])
-                if attributes is None:
-                    attributes = list(test_df.columns.values)
-                test_datacheck = DataCheck(test_df,attributes,target_key)
-                test_datacheck.check_type()
-                X_test = test_df[attributes]
-                y_test = test_df[target_key]
-                datapreprocessing = DataPreprocessing(pd.concat([X_test,y_test],axis=1),attributes,target_key)
-                if show==True:
-                    print("BEFORE DATA PREPROCESS, SUMMARY INFORMATION OF THE TEST DATA:")
-                file_path_stats = stats_file_path+'/'+'bef_test_data_statistics.csv'
-                datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
-                if to_binary_attrs is not None:
-                    X_test = datapreprocessing.transform_x_to_binary(to_binary_attrs)
-                    X_test = datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
-                resource_dir = '../resources'
-                if area_attrs is not None:
-                    X_test = datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
-                    X_test = datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
-                X_test = datapreprocessing.x_dummies_and_fillna()
-                if show==True:
-                    print("AFTER DATA PREPROCESS, SUMMARY INFORMATION OF THE TEST DATA:")
-                file_path_stats = stats_file_path+'/'+'aft_test_data_statistics.csv'
-                datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
-                print("The detail statistic information files are in directory %s:" % stats_file_path)
-            else:
-                print("Error: please split the data in the directory %s into two files: train and test set, like train_csv.csv, test_csv.csv" % data_path)
-        if form == 2:
-            dict_files={}
-            files = []
-            for dirpath,dirnames,filenames in os.walk(data_path):
-                for filename in filenames:
-                    file_path = os.path.join(dirpath,filename)
-                    if file_path==(data_path+'/'+filename): #there is noly files, no subdirectory in the directory data_path
-                        files.append(file_path)
-                    else: #there are only subdirectories in the directory data_path, one subdirectory is also included
-                        dict_files.setdefault(dirpath,file_path)
-            if len(dict_files)>0:
-                files_sort_key = sorted(dict_files.items(),key=lambda item:item[0]) # sort by key(dirpath, or subdirectory)
-                for i in range(len(files_sort_key)):
-                    files.append(files_sort_key[i][1])
-            df = []
-            for i in range(len(files)):
-                df.append(pd.read_csv(files[i],header=None,names=all_labels,sep=',',na_values='NA',low_memory=False))
-            all_train_df = None
-            all_test_df = None
-            if cut_point >= len(df):
-                print("Error: the cut_point should be less then ",len(df))
-            for i in range(len(df)):
-                if i<=cut_point:
-                    all_train_df = pd.concat([all_train_df,df[i]],axis=0)
-                else:
-                    all_test_df = pd.concat([all_test_df,df[i]],axis=0)
-            all_train_df = all_train_df.reset_index(drop=True)
-            all_test_df = all_test_df.reset_index(drop=True)
-            train_datacheck = DataCheck(all_train_df,attributes,target_key)
-            train_datacheck.check_type()
-            test_datacheck = DataCheck(all_test_df,attributes,target_key)
-            test_datacheck.check_type()
+        datacheck = DataCheck(df,target_key)
+        df = datacheck.check_type(show=show,stats=stats,file_path_stats=file_path_stats)
+        df_datapreprocessing = DataPreprocessing(df,attributes,target_key)
+        df = df_datapreprocessing.discard_trivial_attrs()
 
-            X_train = all_train_df[attributes]
-            y_train = all_train_df[target_key]
-            X_train.info()
-            datapreprocessing = DataPreprocessing(pd.concat([X_train,y_train],axis=1),attributes,target_key)
-            if show==True:
-                print("BEFORE DATA PREPROCESS, SUMMARY INFORMATION OF THE TRAINING DATA:")
-            file_path_stats = stats_file_path+'/'+'bef_train_data_statistics.csv'
-            datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
-            if to_binary_attrs is not None:
-                X_train = datapreprocessing.transform_x_to_binary(to_binary_attrs)
-                X_train = datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
-            resource_dir = '../resources'
-            if area_attrs is not None:
-                X_train = datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
-                X_train = datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
-            X_train = datapreprocessing.x_dummies_and_fillna()
-            if show==True:
-                print("AFTER DATA PREPROCESS, SUMMARY INFORMATION OF THE TRAINING DATA:")
-            file_path_stats = stats_file_path+'/'+'aft_train_data_statistics.csv'
-            datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
+        datacheck = DataCheck(train,target_key)
+        train = datacheck.check_type(show=show,stats=stats,file_path_stats=file_path_stats)
+        train_datapreprocessing = DataPreprocessing(train,attributes,target_key)
+        train = train_datapreprocessing.discard_trivial_attrs()
 
-            X_test = all_test_df[attributes]
-            y_test = all_test_df[target_key]
-            datapreprocessing = DataPreprocessing(pd.concat([X_test,y_test],axis=1),attributes,target_key)
-            if show==True:
-                print("BEFORE DATA PREPROCESS, SUMMARY INFORMATION OF THE TEST DATA:")
-            file_path_stats = stats_file_path+'/'+'bef_test_data_statistics.csv'
-            datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
-            if to_binary_attrs is not None:
-                X_test = datapreprocessing.transform_x_to_binary(to_binary_attrs)
-                X_test = datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
-            resource_dir = '../resources'
-            if area_attrs is not None:
-                X_test = datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
-                X_test = datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
-            X_test = datapreprocessing.x_dummies_and_fillna()
-            if show==True:
-                print("AFTER DATA PREPROCESS, SUMMARY INFORMATION OF THE TEST DATA:")
-            file_path_stats = stats_file_path+'/'+'aft_test_data_statistics.csv'
-            datapreprocessing.data_summary(show=show,stats=stats,file_path_stats=file_path_stats)
-        else:
-            pass
+        datacheck = DataCheck(test,target_key)
+        test = datacheck.check_type(show=show,stats=stats,file_path_stats=file_path_stats)
+        test_datapreprocessing = DataPreprocessing(test,attributes,target_key)
+        test = test_datapreprocessing.discard_trivial_attrs()
+
+        if to_binary_attrs is not None:
+            train_datapreprocessing.transform_x_to_binary(to_binary_attrs)
+            train_datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
+        resource_dir = '../resources'
+        if area_attrs is not None:
+            train_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
+            train_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
+        X_train = train_datapreprocessing.x_dummies_and_fillna()
+
+        if to_binary_attrs is not None:
+            test_datapreprocessing.transform_x_to_binary(to_binary_attrs)
+            test_datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
+        resource_dir = '../resources'
+        if area_attrs is not None:
+            test_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
+            test_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
+        X_test = test_datapreprocessing.x_dummies_and_fillna()
+
+        y_train = train[target_key]
+        y_test = test[target_key]
+
+        if show==True:
+            print("AFTER DATA PREPROCESS, SUMMARY INFORMATION OF THE DATA:")
+        file_path_stats = stats_file_path+'/'+'aft_statistics.csv'
+        datacheck = DataCheck(df,target_key)
+        datacheck.data_summary(show,stats,file_path_stats)
+        print("Please see the statistical files in directory %s" % stats_file_path)
+
     except Exception as e:
         print(e)
     finally:
@@ -427,8 +304,8 @@ if __name__ == "__main__":
 
     to_binary_attrs = ['user_live_address','user_rela_name','user_relation','user_rela_phone','user_high_edu','user_company_name']
     area_attrs = ['user_live_province','user_live_city']
-    #X_train,X_test,y_train,y_test = data_preprocess(data_path=data_path,form=1,attributes=attributes,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=False)
-    X_train,X_test,y_train,y_test = data_preprocess(data_path=data_path,form=2,attributes=attributes,all_labels=all_labels,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=True,cut_point=6)
+    X_train,X_test,y_train,y_test = data_preprocess(data_path=data_path,form=1,attributes=attributes,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=False)
+    #X_train,X_test,y_train,y_test = data_preprocess(data_path=data_path,form=2,attributes=attributes,all_labels=all_labels,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=True,cut_point=6)
     #train_test(X_train,X_test,y_train,y_test)
     train_test1(X_train,X_test,y_train,y_test)
 
