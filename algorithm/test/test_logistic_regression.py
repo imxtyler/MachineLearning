@@ -235,12 +235,12 @@ def train_test(X_train,X_test,y_train,y_test):
 
 def train_test1(X_train,X_test,y_train,y_test):
     B=10
-    parameters = {'n_estimators':[10],'criterion':['gini']}
+    parameters = {'penalty':['l2']}
     best_parameters = {}
     model = \
         LogisticRegression(
             class_weight='balanced',
-            penalty='L1'
+            penalty='l1'
             )
     grid_cv = GridSearchCV(model,parameters)
     grid_cv.fit(X_train,y_train)
