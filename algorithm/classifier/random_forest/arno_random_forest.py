@@ -10,47 +10,67 @@ from sklearn import model_selection
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from ChicagoBoothML_Helpy.EvaluationMetrics import bin_classif_eval
+from time import time
 
 def train_test(X_train,X_test,y_train,y_test):
+    print("Performing grid search...")
+    RANDOM_SEED = 99
+    k = 5
+    scoring_val = 'roc_auc'
+    max_features_val = 'sqrt'
     #-----------------------------Find the best parameters' combination of the model------------------------------
-    #param_test1 = {'n_estimators': range(20, 600, 20)}
-    #gsearch1 = GridSearchCV(estimator=RandomForestClassifier(min_samples_split=200,
-    #                                                         min_samples_leaf=2, max_depth=5, max_features='sqrt',
-    #                                                         random_state=19),
-    #                        param_grid=param_test1, scoring='roc_auc', cv=5)
-    #gsearch1.fit(X_train,y_train)
+    param_test1 = {'n_estimators': range(20, 600, 20)}
+    gsearch1 = GridSearchCV(estimator=RandomForestClassifier(min_samples_split=200,
+                                                             min_samples_leaf=2, max_depth=5, max_features=max_features_val,
+                                                             random_state=RANDOM_SEED),
+                            param_grid=param_test1, scoring=scoring_val, cv=k)
+    t1 = time()
+    gsearch1.fit(X_train,y_train)
+    print("Grid search phase1 done in %0.3fs" % (time() - t1))
+    print("best score: %0.3f" % gsearch1.best_score_)
+    print("best parameters set:",gsearch1.best_params_)
     #for item in gsearch1.grid_scores_:
     #    print(item)
-    #print(gsearch1.best_params_)
-    #print(gsearch1.best_score_)
-    #print(gsearch1.grid_scores_, gsearch1.best_params_, gsearch2.best_score_,'\n')
-    # print('-----------------------------------------------------------------------------------------------------')
-    # param_test2 = {'max_depth': range(2, 16, 2), 'min_samples_split': range(20, 200, 20)}
-    # gsearch2 = GridSearchCV(estimator=RandomForestClassifier(n_estimators=300,
-    #                                                          min_samples_leaf=2, max_features='sqrt', oob_score=True,
-    #                                                          random_state=19),
-    #                         param_grid=param_test2, scoring='roc_auc', iid=False, cv=5)
-    # gsearch2.fit(X_train,y_train)
-    # for item in gsearch2.grid_scores_:
-    #    print(item)
-    # print(gsearch2.best_params_)
-    # print(gsearch2.best_score_)
-    # print(gsearch2.cv_results_, gsearch2.best_params_, gsearch2.best_score_,'\n')
+    #print(gsearch1.grid_scores_, gsearch1.best_params_, gsearch1.best_score_,'\n')
+    print()
+    n_estimators_val = gsearch1.best_params_.get('n_estimators')
+    print("n_estimators_val:",n_estimators_val)
+    print('-----------------------------------------------------------------------------------------------------')
+    param_test2 = {'max_depth': range(2, 16, 2), 'min_samples_split': range(20, 200, 20)}
+    gsearch2 = GridSearchCV(estimator=RandomForestClassifier(n_estimators=n_estimators_val,
+                                                             #min_samples_leaf=2, max_features=max_features_val, oob_score=True,
+                                                             min_samples_leaf=2, max_features=max_features_val,
+                                                             random_state=RANDOM_SEED),
+                            param_grid=param_test2, scoring=scoring_val, iid=False, cv=k)
+    t2 = time()
+    gsearch2.fit(X_train,y_train)
+    print("Grid search phase2 done in %0.3fs" % (time() - t2))
+    print("best score: %0.3f" % gsearch2.best_score_)
+    print("best parameters set:",gsearch2.best_params_)
+    print('best_estimator_:',gsearch2.best_estimator_)
+    #for item in gsearch2.grid_scores_:
+    #   print(item)
+    #print(gsearch2.cv_results_, gsearch2.best_params_, gsearch2.best_score_,'\n')
+    print()
+    max_depth_val = gsearch2.best_params_.get('max_depth')
+    min_samples_split_val = gsearch2.best_params_.get('min_samples_split')
+    print("max_depth_val:",max_depth_val)
+    print("min_samples_split_val:",min_samples_split_val)
     ##-----------------------------Find the best parameters' combination of the model------------------------------
-    B = 300
-    RANDOM_SEED = 99
+
+    B = n_estimators_val
     model = \
         RandomForestClassifier(
             n_estimators=B,
             #criterion='entropy',
             criterion='gini',
             #max_depth=None,  # expand until all leaves are pure or contain < MIN_SAMPLES_SPLIT samples
-            max_depth=4,
-            min_samples_split=80,
+            max_depth=max_depth_val,
+            min_samples_split=min_samples_split_val,
             min_samples_leaf=2,
             min_weight_fraction_leaf=0.0,
             #max_features=None, # number of features to consider when looking for the best split; None: max_features=n_features
-            max_features="sqrt",
+            max_features=max_features_val,
             max_leaf_nodes=None,  # None: unlimited number of leaf nodes
             bootstrap=True,
             oob_score=True,  # estimate Out-of-Bag Cross Entropy
@@ -60,17 +80,22 @@ def train_test(X_train,X_test,y_train,y_test):
             verbose=0,
             warm_start=False)
 
+    print("Performing kfold cross-validation...")
     kfold = model_selection.KFold(n_splits=5,random_state=RANDOM_SEED)
     eval_standard = ['accuracy','recall_macro','precision_macro','f1_macro']
     results = []
+    t = time()
     for scoring in eval_standard:
         cv_results = model_selection.cross_val_score(model,X_train,y_train,scoring=scoring,cv=kfold)
         results.append(cv_results)
         msg = "%s: %f (%f)" % (scoring,cv_results.mean(),cv_results.std())
         print(msg)
-    # Make predictions on validation dataset
     model.fit(X_train,y_train)
+    print("Kfold cross-validation done in %0.3fs" % (time() - t))
+    print()
     print('oob_score: %f' % (model.oob_score_))
+
+    # Make predictions on validation dataset
     #default evaluation way
     print('-------------------default evaluation----------------------')
     rf_pred_probs = model.predict(X=X_test)
@@ -148,17 +173,21 @@ def train_test(X_train,X_test,y_train,y_test):
     print(model_oos_performance.iloc[idx,:])
 
 def train_test1(X_train,X_test,y_train,y_test):
-    B=10
-    parameters = {'n_estimators':[10],'criterion':['gini']}
+    print("Performing grid search...")
+    B=20
+    parameters = {'n_estimators':[20],'max_features':['sqrt']}
     best_parameters = {}
     model = \
         RandomForestClassifier(
             n_estimators=B,
             criterion='gini',
-            class_weight='balanced',
+            #class_weight='balanced',
             warm_start=False)
     grid_cv = GridSearchCV(model,parameters)
+    t = time()
     grid_cv.fit(X_train,y_train)
+    print("Grid search done in %0.3fs" % (time() - t))
+    print()
     print('best_score_:',grid_cv.best_score_)
     print('best_estimator_:',grid_cv.best_estimator_)
     rf_pred_probs = grid_cv.predict(X=X_test)
