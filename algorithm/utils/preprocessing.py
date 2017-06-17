@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import codecs
 from sklearn.ensemble import RandomForestRegressor
+from time import time
 
 import data_read
 
@@ -442,7 +443,7 @@ class DataPreprocessing():
 
         return self.x_df
 
-def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=None,to_binary_attrs=None,area_attrs=None,show=True,stats=True,stats_file_path='/tmp',test_size=0.3,cut_point=0,random_state=99):
+def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=None,to_binary_attrs=None,area_attrs=None,discard_threshold=1.0,show=True,stats=True,stats_file_path='/tmp',test_size=0.3,cut_point=0,random_state=99):
     '''
     :param data_path: string, the data's path
     :param form: int, indicate that what type of data to process:
@@ -454,6 +455,7 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
     :param target_key: string, label of target
     :param to_binary_attrs: list of string, attributes to be converted to binary value:1 or 0
     :param area_attrs: list of string, attributes about china area, like province, city, etc.
+    :param discard_threshold: float, indicate that it will be discarded when one attribute's null value ratio > discard_threshold
     :param show: bool, indicate that the data's summary information should be printed
     :param stats: bool, indicate that the data's detail statistical information should be done
     :param stats_file_path: string, the path of statistical files
@@ -462,6 +464,8 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
     :param random_state: int, random state
     :return: composite of DataFrame: X_train,X_test,y_train,y_test
     '''
+    print("Performing data's preprocessing...")
+    t = time()
     X_train = None
     y_train = None
     X_test = None
@@ -477,19 +481,19 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
         datacheck = DataCheck(df,target_key)
         df = datacheck.check_type(show=show,stats=stats,file_path_stats=file_path_stats)
         df_datapreprocessing = DataPreprocessing(df,attributes,target_key)
-        df = df_datapreprocessing.discard_trivial_attrs()
+        df = df_datapreprocessing.discard_trivial_attrs(null_ratio_threshold=discard_threshold)
 
         file_path_stats = stats_file_path+'/'+'bef_train_data_statistics.csv'
         datacheck = DataCheck(train,target_key)
         train = datacheck.check_type(show=show,stats=stats,file_path_stats=file_path_stats)
         train_datapreprocessing = DataPreprocessing(train,attributes,target_key)
-        train = train_datapreprocessing.discard_trivial_attrs()
+        train = train_datapreprocessing.discard_trivial_attrs(null_ratio_threshold=discard_threshold)
 
         file_path_stats = stats_file_path+'/'+'bef_test_data_statistics.csv'
         datacheck = DataCheck(test,target_key)
         test = datacheck.check_type(show=show,stats=stats,file_path_stats=file_path_stats)
         test_datapreprocessing = DataPreprocessing(test,attributes,target_key)
-        test = test_datapreprocessing.discard_trivial_attrs()
+        test = test_datapreprocessing.discard_trivial_attrs(null_ratio_threshold=discard_threshold)
 
         resource_dir = '../resources'
         if to_binary_attrs is not None:
@@ -523,10 +527,12 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
         file_path_stats = stats_file_path+'/'+'aft_data_statistics.csv'
         datacheck = DataCheck(df,target_key)
         datacheck.data_summary(show,stats,file_path_stats)
-        print("Please see the statistical files in directory %s" % stats_file_path)
+        print("Please see the statistical files in directory %s if you want to see the detail information" % stats_file_path)
 
     except Exception as e:
         print(e)
     finally:
+        print("Data's preprocessing done in %0.3fs" % (time() - t))
+        print()
         return X_train,X_test,y_train,y_test
 
