@@ -476,41 +476,31 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
             attributes = list(df.columns.values)
         if show==True:
             print("BEFORE DATA PREPROCESS, SUMMARY INFORMATION OF THE DATA:")
-        file_path_stats = stats_file_path+'/'+'bef_data_statistics.csv'
+        bef_file_path_stats = stats_file_path+'/'+'bef_data_statistics.csv'
 
         datacheck = DataCheck(df,target_key)
-        df = datacheck.check_type(show=show,stats=stats,file_path_stats=file_path_stats)
+        df = datacheck.check_type(show=show,stats=stats,file_path_stats=bef_file_path_stats)
         df_datapreprocessing = DataPreprocessing(df,attributes,target_key)
         df = df_datapreprocessing.discard_trivial_attrs(null_ratio_threshold=discard_threshold)
 
-        file_path_stats = stats_file_path+'/'+'bef_train_data_statistics.csv'
-        datacheck = DataCheck(train,target_key)
-        train = datacheck.check_type(show=show,stats=stats,file_path_stats=file_path_stats)
-        train_datapreprocessing = DataPreprocessing(train,attributes,target_key)
-        train = train_datapreprocessing.discard_trivial_attrs(null_ratio_threshold=discard_threshold)
-
-        file_path_stats = stats_file_path+'/'+'bef_test_data_statistics.csv'
-        datacheck = DataCheck(test,target_key)
-        test = datacheck.check_type(show=show,stats=stats,file_path_stats=file_path_stats)
-        test_datapreprocessing = DataPreprocessing(test,attributes,target_key)
-        test = test_datapreprocessing.discard_trivial_attrs(null_ratio_threshold=discard_threshold)
-
         resource_dir = '../resources'
         if to_binary_attrs is not None:
-            train_datapreprocessing.transform_x_to_binary(to_binary_attrs)
-            train_datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
+            df_datapreprocessing.transform_x_to_binary(to_binary_attrs)
+            df_datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
         if area_attrs is not None:
-            train_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
-            train_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
-        X_train = train_datapreprocessing.x_dummies_and_fillna()
+            df_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
+            df_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
+        X_df = df_datapreprocessing.x_dummies_and_fillna()
 
-        if to_binary_attrs is not None:
-            test_datapreprocessing.transform_x_to_binary(to_binary_attrs)
-            test_datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
-        if area_attrs is not None:
-            test_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
-            test_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
-        X_test = test_datapreprocessing.x_dummies_and_fillna()
+        X_train = X_df.loc[train.index.values,:]
+        df_index_lst = df.index.values.tolist()
+        train_index_lst = train.index.values.tolist()
+        # If the index isn't continous, should use for-loop
+        #for item in train_index_lst:
+        #    df_index_lst.remove(item)
+        X_test_index_lst = df_index_lst[len(train_index_lst):]
+        X_test = X_df.loc[np.array(X_test_index_lst),:]
+        X_test = X_test.reset_index(drop=True)
 
         y_train = train[target_key]
         y_test = test[target_key]
@@ -524,10 +514,10 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
 
         if show==True:
             print("AFTER DATA PREPROCESS, SUMMARY INFORMATION OF THE DATA:")
-        file_path_stats = stats_file_path+'/'+'aft_data_statistics.csv'
+        aft_file_path_stats = stats_file_path+'/'+'aft_data_statistics.csv'
         datacheck = DataCheck(df,target_key)
-        datacheck.data_summary(show,stats,file_path_stats)
-        print("Please see the statistical files in directory %s if you want to see the detail information" % stats_file_path)
+        datacheck.data_summary(show=show,stats=stats,file_path_stats=aft_file_path_stats)
+        print("Please see the statistical files %s and %s in directory %s if you want to see the detail information" % (bef_file_path_stats,aft_file_path_stats,stats_file_path))
 
     except Exception as e:
         print(e)
