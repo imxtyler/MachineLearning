@@ -95,9 +95,9 @@ class DataCheck():
             stats[key] = self.df[key].value_counts(dropna=False)
         if output:
             MAX_LEN = max([len(stats[key].index) for key in self.df.columns])
-            csvfile = open(file_path_stats, 'w')
-            #csvfile.write(codecs.BOM_UTF8)
-            #csvfile.write(codecs.UTF-8)
+            #csvfile = open(file_path_stats, 'wb') # used for python2
+            #csvfile.write(codecs.BOM_UTF8) # used for python2
+            csvfile = codecs.open(file_path_stats, 'w+', 'utf_8_sig') # used for python3
             writer = csv.writer(csvfile)
             header = []
             for key in self.df.columns:
