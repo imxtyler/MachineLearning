@@ -34,7 +34,6 @@ def train_test(X_train,X_test,y_train,y_test):
     #print(gsearch1.grid_scores_, gsearch1.best_params_, gsearch1.best_score_,'\n')
     print()
     n_estimators_val = gsearch1.best_params_.get('n_estimators')
-    print("n_estimators_val:",n_estimators_val)
     print('-----------------------------------------------------------------------------------------------------')
     param_test2 = {'max_depth': range(2, 16, 2), 'min_samples_split': range(20, 200, 20)}
     gsearch2 = GridSearchCV(estimator=RandomForestClassifier(n_estimators=n_estimators_val,
@@ -54,8 +53,6 @@ def train_test(X_train,X_test,y_train,y_test):
     print()
     max_depth_val = gsearch2.best_params_.get('max_depth')
     min_samples_split_val = gsearch2.best_params_.get('min_samples_split')
-    print("max_depth_val:",max_depth_val)
-    print("min_samples_split_val:",min_samples_split_val)
     ##-----------------------------Find the best parameters' combination of the model------------------------------
 
     B = n_estimators_val
@@ -175,8 +172,7 @@ def train_test(X_train,X_test,y_train,y_test):
 def train_test1(X_train,X_test,y_train,y_test):
     print("Performing grid search...")
     B=20
-    parameters = {'n_estimators':[20],'max_features':['sqrt']}
-    best_parameters = {}
+    parameters = {'n_estimators':[B],'max_features':['sqrt']}
     model = \
         RandomForestClassifier(
             n_estimators=B,
