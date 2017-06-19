@@ -518,33 +518,62 @@ class DataPreprocessing():
         self.city_mapping = city_dict
 
     def do_china_province_mapping(self,item):
-        return_val = np.nan
-        for key,val in self.province_mapping.items():
-            if key in item:
-                return_val = val
-                break
+        item_val = np.nan
+        #if np.isnan(item):
+        if str(item) == 'nan':
+            pass
+        else:
+            for key,val in self.province_mapping.items():
+                if key in item:
+                    item_val = val
+                    break
+        item = item_val
 
-        return return_val
+        return item
 
     def do_china_city_mapping(self,item):
-        return_val = np.nan
-        for key,val in self.city_mapping.items():
-            if key in item:
-                return_val = val
-                break
+        item_val = np.nan
+        #if np.isnan(item):
+        if str(item) == 'nan':
+            pass
+        else:
+            for key,val in self.city_mapping.items():
+                if key in item:
+                    item_val = val
+                    break
+        item = item_val
 
-        return return_val
+        return item
 
-    def check_province_city_consistency(self,province,city):
-        area_df = None
+    def check_province_city_consistency(self,province,city,do_mapping=True):
+        '''
+        :param province:
+        :param city:
+        :param do_mapping: bool, indicate that if do_mapping on the column province and city
+        :return:
+        '''
+        print("Performing check province and city's consistency...")
+        t = time()
+        area_df = self.df
         self.china_province_number_mapping()
         self.china_city_number_mapping()
-        # fixme
         area_df[province] = self.df[province].map(self.do_china_province_mapping)
         area_df[city] = self.df[city].map(self.do_china_city_mapping)
-        #print(area_df.info())
-        area_df.to_csv('/tmp/area_df.csv', sep=',')
-        self.df.to_csv('/tmp/df.csv', sep=',')
+        col_name = 'province_city_consistency'
+        #area_df[col_name] = Series(np.random.randn(self.sample_num),index=area_df.index)
+        #area_df[col_name] = area_df[province].map(lambda x: np.nan if str(x) == 'nan' else np.nan)
+        #area_df = area_df.assign(col_name=pd.Series(np.random.randn(self.sample_num)).values)
+        area_df[col_name] = area_df[province].map(lambda z: np.nan if str(z) == 'nan' else (area_df[province].map(lambda x: str(x)[0:1]) == area_df[city].map(lambda y: str(y)[0:1])))
+        if do_mapping == True:
+            self.df = area_df
+        else:
+            self.df = pd.concat([self.df,area_df[col_name]],axis=1)
+        self.df = self.df.reset_index(drop=True)
+        self.attributes = self.attributes.append(col_name)
+        print("Check province and city's consistency done in %0.3fs" % (time() - t))
+        print()
+
+        return self.df
 
     #def set_x_missing_label(self,numberical_attributes,label):
     #    '''
@@ -794,7 +823,7 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
         df = datacheck.check_value()
         df_datapreprocessing = DataPreprocessing(df,attributes,target_key,resource_dir)
         df = df_datapreprocessing.discard_trivial_attrs(null_ratio_threshold=discard_threshold)
-        #df_datapreprocessing.check_province_city_consistency('user_live_province','user_live_city')
+        df = df_datapreprocessing.check_province_city_consistency('user_live_province','user_live_city')
 
         if to_binary_attrs is not None:
             df_datapreprocessing.transform_x_to_binary(to_binary_attrs)
