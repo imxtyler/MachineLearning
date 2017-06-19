@@ -148,7 +148,110 @@ class DataCheck():
         return self.df
 
     def check_value(self):
-        pass
+        try:
+            for column in list(self.df.columns.values):
+                column = str(column)
+                if re.match(r'.*\_name', column, re.I):
+                    self.df[column] = self.df[column].map(self.check_name)
+                if re.match(r'.*\_gender|.*\_sex', column, re.I):
+                    self.df[column] = self.df[column].map(self.check_gender)
+                if re.match(r'.*\_age', column, re.I):
+                    self.df[column] = self.df[column].map(self.check_age)
+                if re.match(r'.*\_idcard|.*id\_card', column, re.I):
+                    self.df[column] = self.df[column].map(self.check_idcard)
+                if re.match(r'.*\_phone', column, re.I):
+                    self.df[column] = self.df[column].map(self.check_phone)
+                if re.match(r'.*\_mail|.*\_email', column, re.I):
+                    self.df[column] = self.df[column].map(self.check_mail)
+                if re.match(r'.*\_province|.*\_prov', column, re.I):
+                    self.df[column] = self.df[column].map(self.check_province)
+                if re.match(r'.*\_city', column, re.I):
+                    self.df[column] = self.df[column].map(self.check_city)
+        except Exception as e:
+            print(e)
+        finally:
+            return self.df
+
+    def check_name(self,name):
+        try:
+            if np.isnan(name):
+                return 0
+        except:
+            #for ch in name.decode('utf-8'): # for python2
+            for ch in name:
+                if u'\u4e00' <= ch <= u'\u9fff' or 'a' <= ch <= 'z':
+                    return 1
+                else:
+                    return 0
+
+    def check_gender(self,gender):
+        if gender not in ['男', '女', 'male', 'female']:
+            return np.nan
+        else:
+            return gender
+
+    def check_age(self,age):
+        try:
+            if np.isnan(age):
+                return age
+            age = float(age)
+            if age > 100 and age < 10:
+                return -100
+            else:
+                return age
+        except:
+            return np.nan
+
+    def check_idcard(self,idcard):
+        idcard = str(idcard)
+        if re.match('^([1-9]\d{5}[12]\d{3}(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])\d{3}[0-9xX])$', idcard):
+            return 1
+        else:
+            return 0
+
+    def check_phone(self,phone):
+        phone = str(phone)
+        if re.match('^0\d{2,3}\d{7,8}$|^1[358]\d{9}$|^147\d{8}', phone):
+            return 1
+        else:
+            return 0
+
+    def check_mail(self,mail):
+        mail = str(mail)
+        if re.match(r'^[0-9a-zA-Z_]{0,19}@[0-9a-zA-Z]{1,13}\.[com,cn,net]{1,3}$', mail):
+            return 1
+        else:
+            return 0
+
+    def check_province(self,province):
+        try:
+            if np.isnan(province):
+                return np.nan
+            else:
+                return np.nan
+        except:
+            #for ch in province.decode('utf-8'): # for python2
+            for ch in province:
+                if u'\u4e00' <= ch <= u'\u9fff' or 'a' <= ch <= 'z':
+                    continue
+                else:
+                    return np.nan
+        return province
+
+    def check_city(self,city):
+        try:
+            if np.isnan(city):
+                return np.nan
+            else:
+                return np.nan
+        except:
+            #for ch in city.decode('utf-8'): # for python2
+            for ch in city:
+                if u'\u4e00' <= ch <= u'\u9fff' or 'a' <= ch <= 'z':
+                    continue
+                else:
+                    return np.nan
+        return city
 
     def is_numberical_type(self,item):
         matchF = False
@@ -206,8 +309,132 @@ class DataCheck():
 
         return item
 
+#china area regex pattern
+china_area_regex_patterns = [
+    r'(.*)特别行政区.*\Z',
+    r'(.*)各族.*\Z',
+    r'(.*)左翼蒙古族.*\Z',
+    r'(.*)满族蒙古族.*\Z',
+    r'(.*)蒙古族藏族.*\Z',
+    r'(.*)土家族苗族.*\Z',
+    r'(.*)苗族土家族.*\Z',
+    r'(.*)苗族侗族.*\Z',
+    r'(.*)壮族瑶族.*\Z',
+    r'(.*)壮族苗族.*\Z',
+    r'(.*)黎族苗族.*\Z',
+    r'(.*)藏族羌族.*\Z',
+    r'(.*)仡佬族苗族.*\Z',
+    r'(.*)布依族苗族.*\Z',
+    r'(.*)苗族布依族.*\Z',
+    r'(.*)彝族回族苗族.*\Z',
+    r'(.*)回族彝族.*\Z',
+    r'(.*)彝族回族.*\Z',
+    r'(.*)彝族傣族.*\Z',
+    r'(.*)傣族彝族.*\Z',
+    r'(.*)哈尼族彝族傣族.*\Z',
+    r'(.*)哈尼族彝族.*\Z',
+    r'(.*)彝族哈尼族拉祜族.*\Z',
+    r'(.*)傣族拉祜族佤族.*\Z',
+    r'(.*)拉祜族佤族布朗族傣族.*\Z',
+    r'(.*)傣族佤族.*\Z',
+    r'(.*)苗族瑶族傣族.*\Z',
+    r'(.*)傣族景颇族.*\Z',
+    r'(.*)独龙族怒族.*\Z',
+    r'(.*)白族普米族.*\Z',
+    r'(.*)保安族东乡族撒拉族.*\Z',
+    r'(.*)回族土族.*\Z',
+    r'(.*)蒙古族.*\Z',
+    r'(.*)回族.*\Z',
+    r'(.*)藏族.*\Z',
+    r'(.*)维吾尔族.*\Z',
+    r'(.*)苗族.*\Z',
+    r'(.*)彝族.*\Z',
+    r'(.*)壮族.*\Z',
+    r'(.*)布依族.*\Z',
+    r'(.*)朝鲜族.*\Z',
+    r'(.*)满族.*\Z',
+    r'(.*)侗族.*\Z',
+    r'(.*)瑶族.*\Z',
+    r'(.*)白族.*\Z',
+    r'(.*)土家族.*\Z',
+    r'(.*)哈尼族.*\Z',
+    r'(.*)哈萨克族.*\Z',
+    r'(.*)傣族.*\Z',
+    r'(.*)黎族.*\Z',
+    r'(.*)僳僳族.*\Z',
+    r'(.*)佤族.*\Z',
+    r'(.*)畲族.*\Z',
+    r'(.*)高山族.*\Z',
+    r'(.*)拉祜族.*\Z',
+    r'(.*)水族.*\Z',
+    r'(.*)东乡族.*\Z',
+    r'(.*)纳西族.*\Z',
+    r'(.*)景颇族.*\Z',
+    r'(.*)柯尔克孜族.*\Z',
+    r'(.*)土族.*\Z',
+    r'(.*)达斡尔族.*\Z',
+    r'(.*)仫佬族.*\Z',
+    r'(.*)羌族.*\Z',
+    r'(.*)布朗族.*\Z',
+    r'(.*)撒拉族.*\Z',
+    r'(.*)毛南族.*\Z',
+    r'(.*)仡佬族.*\Z',
+    r'(.*)锡伯族.*\Z',
+    r'(.*)阿昌族.*\Z',
+    r'(.*)普米族.*\Z',
+    r'(.*)塔吉克族.*\Z',
+    r'(.*)怒族.*\Z',
+    r'(.*)乌孜别克族.*\Z',
+    r'(.*)俄罗斯族.*\Z',
+    r'(.*)鄂温克族.*\Z',
+    r'(.*)德昂族.*\Z',
+    r'(.*)保安族.*\Z',
+    r'(.*)裕固族.*\Z',
+    r'(.*)京族.*\Z',
+    r'(.*)塔塔尔族.*\Z',
+    r'(.*)独龙族.*\Z',
+    r'(.*)鄂伦春族.*\Z',
+    r'(.*)赫哲族.*\Z',
+    r'(.*)门巴族.*\Z',
+    r'(.*)珞巴族.*\Z',
+    r'(.*)基诺族.*\Z',
+    r'(.*)回族自治区\Z',
+    r'(.*)壮族自治区\Z',
+    r'(.*)自治区\Z',
+    r'(.*)自治州\Z',
+    r'(.*)自治县\Z',
+    r'(.*)自治旗\Z',
+    r'(.*)地区\Z',
+    r'(.*)新区\Z',
+    r'(.*)市\Z',
+    r'(.*)县\Z'
+]
+china_city_regex_patterns = [
+    r'(.*)市\Z',
+    r'(.*)盟\Z',
+    r'(.*)地区\Z',
+    r'(.*)朝鲜族自治州\Z',
+    r'(.*)土家族苗族自治州\Z',
+    r'(.*)藏族羌族自治州\Z',
+    r'(.*)藏族自治州\Z',
+    r'(.*)彝族自治州\Z',
+    r'(.*)布依族苗族自治州\Z',
+    r'(.*)苗族侗族自治州\Z',
+    r'(.*)哈尼族彝族自治州\Z',
+    r'(.*)壮族苗族自治州\Z',
+    r'(.*)傣族自治州\Z',
+    r'(.*)白族自治州\Z',
+    r'(.*)傣族景颇族自治州\Z',
+    r'(.*)傈僳族自治州\Z',
+    r'(.*)回族自治州\Z',
+    r'(.*)蒙古族藏族自治州\Z',
+    r'(.*)蒙古自治州\Z',
+    r'(克孜勒苏柯尔克孜)自治州\Z',
+    r'(伊犁哈萨克)自治州\Z'
+]
+
 class DataPreprocessing():
-    def __init__(self,df,attributes,key):
+    def __init__(self,df,attributes,key,resource_dir):
         '''
         :param df: the dataframe containing the attriute and target
         :param attributes: list, the X's attributes that need to be calculated the gini score and is type 1
@@ -218,6 +445,10 @@ class DataPreprocessing():
         self.attributes = attributes
         self.key = key
         self.x_df = None
+        self.resource_dir = resource_dir
+        self.area_mapping = None
+        self.province_mapping = None
+        self.city_mapping = None
 
     def discard_trivial_attrs(self,null_ratio_threshold=0.95):
         '''
@@ -234,6 +465,86 @@ class DataPreprocessing():
                     self.attributes.remove(rm_key)
 
         return self.df
+
+    def china_province_number_mapping(self):
+        province_dict = {}
+        try:
+            for dirpath,dirnames,filenames in os.walk(self.resource_dir):
+                for file in filenames:
+                    if file=='china_province_area_number.csv':
+                        filepath = dirpath+'/'+file
+                        res_file = open(filepath,'r')
+                        while True:
+                            line = res_file.readline()
+                            if not line:
+                                break
+                            province_number,province = line.strip().split(',')
+                            #province_dict.setdefault(province_number,province)
+                            province_dict.setdefault(province,province_number)
+        except Exception as e:
+            print(e)
+
+        self.province_mapping = province_dict
+
+    def china_city_number_mapping(self):
+        city_dict = {}
+        try:
+            for dirpath,dirnames,filenames in os.walk(self.resource_dir):
+                for file in filenames:
+                    if file=='china_city_area_number.csv':
+                        filepath = dirpath+'/'+file
+                        res_file = open(filepath,'r')
+                        while True:
+                            line = res_file.readline()
+                            if not line:
+                                break
+                            city_number,city = line.strip().split(',')
+                            #city_dict.setdefault(city_number,city)
+                            matchO = None
+                            for pattern in china_city_regex_patterns:
+                                if matchO is not None:
+                                    break
+                                matchO = re.match(pattern, str(city), re.I)
+                            if matchO:
+                                new_city = matchO.group(1)
+                                #city_dict.setdefault(city_number,new_city)
+                                city_dict.setdefault(new_city,city_number)
+                            else:
+                                #city_dict.setdefault(city_number,city)
+                                city_dict.setdefault(new_city,city_number)
+        except Exception as e:
+            print(e)
+
+        self.city_mapping = city_dict
+
+    def do_china_province_mapping(self,item):
+        return_val = np.nan
+        for key,val in self.province_mapping.items():
+            if key in item:
+                return_val = val
+                break
+
+        return return_val
+
+    def do_china_city_mapping(self,item):
+        return_val = np.nan
+        for key,val in self.city_mapping.items():
+            if key in item:
+                return_val = val
+                break
+
+        return return_val
+
+    def check_province_city_consistency(self,province,city):
+        area_df = None
+        self.china_province_number_mapping()
+        self.china_city_number_mapping()
+        # fixme
+        area_df[province] = self.df[province].map(self.do_china_province_mapping)
+        area_df[city] = self.df[city].map(self.do_china_city_mapping)
+        #print(area_df.info())
+        area_df.to_csv('/tmp/area_df.csv', sep=',')
+        self.df.to_csv('/tmp/df.csv', sep=',')
 
     #def set_x_missing_label(self,numberical_attributes,label):
     #    '''
@@ -351,14 +662,13 @@ class DataPreprocessing():
         self.x_df = self.df[self.attributes]
         return self.x_df
 
-    def china_area_number_mapping(self,attributes,resource_dir):
+    def china_area_number_mapping(self,attributes):
         '''
         :param attributes: the attributes that need to be transformed to area number 
-        :param resource_dir: the directory including the resource files
         '''
         area_dict = {}
         try:
-            for dirpath,dirnames,filenames in os.walk(resource_dir):
+            for dirpath,dirnames,filenames in os.walk(self.resource_dir):
                 for file in filenames:
                     if file=='china_area_number.csv':
                         filepath = dirpath+'/'+file
@@ -478,17 +788,19 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
             print("BEFORE DATA PREPROCESS, SUMMARY INFORMATION OF THE DATA:")
         bef_file_path_stats = stats_file_path+'/'+'bef_data_statistics.csv'
 
+        resource_dir = '../resources'
         datacheck = DataCheck(df,target_key)
         df = datacheck.check_type(show=show,stats=stats,file_path_stats=bef_file_path_stats)
-        df_datapreprocessing = DataPreprocessing(df,attributes,target_key)
+        df = datacheck.check_value()
+        df_datapreprocessing = DataPreprocessing(df,attributes,target_key,resource_dir)
         df = df_datapreprocessing.discard_trivial_attrs(null_ratio_threshold=discard_threshold)
+        #df_datapreprocessing.check_province_city_consistency('user_live_province','user_live_city')
 
-        resource_dir = '../resources'
         if to_binary_attrs is not None:
             df_datapreprocessing.transform_x_to_binary(to_binary_attrs)
             df_datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
         if area_attrs is not None:
-            df_datapreprocessing.china_area_number_mapping(area_attrs,resource_dir)
+            df_datapreprocessing.china_area_number_mapping(area_attrs)
             df_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
         X_df = df_datapreprocessing.x_dummies_and_fillna()
 
