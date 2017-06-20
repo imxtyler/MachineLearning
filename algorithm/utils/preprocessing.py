@@ -4,6 +4,7 @@
 import re
 import os
 import csv
+import copy
 import numpy as np
 import pandas as pd
 import codecs
@@ -545,33 +546,40 @@ class DataPreprocessing():
 
         return item
 
-    def check_province_city_consistency(self,province,city,do_mapping=True):
+    def check_province_city_consistency(self,province,city,do_province_mapping=True,do_city_mapping=True):
         '''
         :param province:
         :param city:
-        :param do_mapping: bool, indicate that if do_mapping on the column province and city
+        :param do_province_mapping: bool, indicate that if doing mapping between china province area names and the area numbers.
+        :param do_city_mapping: bool, indicate that if doing mapping between china city area names and the area numbers.
         :return:
         '''
         print("Performing check province and city's consistency...")
         t = time()
-        area_df = self.df
+        area_df = copy.deepcopy(self.df)
         self.china_province_number_mapping()
         self.china_city_number_mapping()
-        area_df[province] = self.df[province].map(self.do_china_province_mapping)
-        area_df[city] = self.df[city].map(self.do_china_city_mapping)
+        area_df[province] = area_df[province].map(self.do_china_province_mapping)
+        area_df[city] = area_df[city].map(self.do_china_city_mapping)
         col_name = 'province_city_consistency'
         #area_df[col_name] = Series(np.random.randn(self.sample_num),index=area_df.index)
         #area_df[col_name] = area_df[province].map(lambda x: np.nan if str(x) == 'nan' else np.nan)
         #area_df = area_df.assign(col_name=pd.Series(np.random.randn(self.sample_num)).values)
-        area_df[col_name] = area_df[province].map(lambda z: np.nan if str(z) == 'nan' else (area_df[province].map(lambda x: str(x)[0:1]) == area_df[city].map(lambda y: str(y)[0:1])))
-        if do_mapping == True:
-            self.df = area_df
-        else:
+        area_df[col_name] = area_df[province].map(lambda z: np.nan if str(z) == 'nan' else (area_df[province].map(lambda x: str(x)[0:1]) == area_df[city].map(lambda y: str(y)[0:1])).astype(int))
+        area_df[col_name] = area_df[col_name].notnull().astype(int)
+        if do_province_mapping == True:
+            self.df[province] = area_df[province]
+            self.df[province] = self.df[province].notnull().astype(int)
+            self.df[col_name] = area_df[col_name]
+        if do_city_mapping == True:
+            self.df[city] = area_df[city]
+            self.df[city] = self.df[city].notnull().astype(int)
+            self.df[col_name] = area_df[col_name]
+        if do_province_mapping == False and do_city_mapping == False:
             self.df = pd.concat([self.df,area_df[col_name]],axis=1)
         self.df = self.df.reset_index(drop=True)
-        self.attributes = self.attributes.append(col_name)
+        self.attributes == self.df.columns.values
         print("Check province and city's consistency done in %0.3fs" % (time() - t))
-        print()
 
         return self.df
 
@@ -782,7 +790,7 @@ class DataPreprocessing():
 
         return self.x_df
 
-def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=None,to_binary_attrs=None,area_attrs=None,discard_threshold=1.0,show=True,stats=True,stats_file_path='/tmp',test_size=0.3,cut_point=0,random_state=99):
+def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=None,to_binary_attrs=None,province=None,city=None,do_province_mapping=True,do_city_mapping=True,discard_threshold=1.0,show=True,stats=True,stats_file_path='/tmp',test_size=0.3,cut_point=0,random_state=99):
     '''
     :param data_path: string, the data's path
     :param form: int, indicate that what type of data to process:
@@ -793,7 +801,10 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
     :param all_labels: list of string, labels of data, including all X and y, even the label isn't used, should use when form=2
     :param target_key: string, label of target
     :param to_binary_attrs: list of string, attributes to be converted to binary value:1 or 0
-    :param area_attrs: list of string, attributes about china area, like province, city, etc.
+    :param province: string, china province area.
+    :param city: string, china city area. params province and city should used with together.
+    :param do_province_mapping: bool, indicate that if doing mapping between china province area names and the area numbers.
+    :param do_city_mapping: bool, indicate that if doing mapping between china city area names and the area numbers.
     :param discard_threshold: float, indicate that it will be discarded when one attribute's null value ratio > discard_threshold
     :param show: bool, indicate that the data's summary information should be printed
     :param stats: bool, indicate that the data's detail statistical information should be done
@@ -819,18 +830,16 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
 
         resource_dir = '../resources'
         datacheck = DataCheck(df,target_key)
-        df = datacheck.check_type(show=show,stats=stats,file_path_stats=bef_file_path_stats)
+        _ = datacheck.check_type(show=show,stats=stats,file_path_stats=bef_file_path_stats)
         df = datacheck.check_value()
         df_datapreprocessing = DataPreprocessing(df,attributes,target_key,resource_dir)
+        if province is not None and city is not None:
+            _ = df_datapreprocessing.check_province_city_consistency(province,city,do_province_mapping,do_city_mapping)
         df = df_datapreprocessing.discard_trivial_attrs(null_ratio_threshold=discard_threshold)
-        df = df_datapreprocessing.check_province_city_consistency('user_live_province','user_live_city')
 
         if to_binary_attrs is not None:
             df_datapreprocessing.transform_x_to_binary(to_binary_attrs)
             df_datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
-        if area_attrs is not None:
-            df_datapreprocessing.china_area_number_mapping(area_attrs)
-            df_datapreprocessing.transform_x_dtype(area_attrs,d_type=[int],uniform_type=True)
         X_df = df_datapreprocessing.x_dummies_and_fillna()
 
         X_train = X_df.loc[train.index.values,:]
