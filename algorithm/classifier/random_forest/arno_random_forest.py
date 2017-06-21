@@ -9,6 +9,7 @@ from sklearn import metrics
 from sklearn import model_selection
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
+from sklearn.externals import joblib
 from ChicagoBoothML_Helpy.EvaluationMetrics import bin_classif_eval
 from time import time
 
@@ -91,6 +92,7 @@ def train_test(X_train,X_test,y_train,y_test):
     print("Kfold cross-validation done in %0.3fs" % (time() - t))
     print()
     print('oob_score: %f' % (model.oob_score_))
+    joblib.dump(model,'../../model/train_model.pkl',compress=3)
 
     # Make predictions on validation dataset
     #default evaluation way
@@ -182,6 +184,7 @@ def train_test1(X_train,X_test,y_train,y_test):
     grid_cv = GridSearchCV(model,parameters)
     t = time()
     grid_cv.fit(X_train,y_train)
+    joblib.dump(grid_cv,'../../model/train_model.pkl',compress=3)
     print("Grid search done in %0.3fs" % (time() - t))
     print()
     print('best_score_:',grid_cv.best_score_)
