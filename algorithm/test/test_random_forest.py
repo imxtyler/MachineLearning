@@ -37,14 +37,15 @@ if __name__ == "__main__":
     #target_key="user_own_ninety_overdue_order"
 
     to_binary_attrs = ['user_live_address','user_rela_name','user_relation','user_rela_phone','user_high_edu','user_company_name']
-    area_attrs = ['user_live_province','user_live_city']
-    #X_train,X_test,y_train,y_test = preprocessing.data_preprocess(data_path=data_path,form=1,attributes=attributes,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=False)
-    #X_train,X_test,y_train,y_test = preprocessing.data_preprocess(data_path=data_path,form=2,attributes=attributes,all_labels=all_labels,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=False,cut_point=6)
-    #arno_random_forest.train_test(X_train,X_test,y_train,y_test)
+    province = 'user_live_province'
+    city = 'user_live_city'
+    ##X_train,X_test,y_train,y_test = preprocessing.data_preprocess(data_path=data_path,form=1,attributes=attributes,target_key=target_key,to_binary_attrs=to_binary_attrs,province=province,city=city,show=False)
+    #X_train,X_test,y_train,y_test = preprocessing.data_preprocess(data_path=data_path,form=2,attributes=attributes,all_labels=all_labels,target_key=target_key,to_binary_attrs=to_binary_attrs,province=province,city=city,do_province_mapping=False,show=False,cut_point=6)
+    ##arno_random_forest.train_test(X_train,X_test,y_train,y_test)
     #arno_random_forest.train_test1(X_train,X_test,y_train,y_test)
 
     for i in range(8):
         print("#################################################################################")
-        X_train,X_test,y_train,y_test = preprocessing.data_preprocess(data_path=data_path,form=2,attributes=attributes,all_labels=all_labels,target_key=target_key,to_binary_attrs=to_binary_attrs,area_attrs=area_attrs,show=False,cut_point=i)
+        X_train,X_test,y_train,y_test = preprocessing.data_preprocess(data_path=data_path,form=2,attributes=attributes,all_labels=all_labels,target_key=target_key,to_binary_attrs=to_binary_attrs,province=province,city=city,do_province_mapping=False,show=False,cut_point=i)
         #arno_random_forest.train_test(X_train,X_test,y_train,y_test)
         arno_random_forest.train_test1(X_train,X_test,y_train,y_test)
