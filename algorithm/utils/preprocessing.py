@@ -556,29 +556,32 @@ class DataPreprocessing():
         '''
         print("Performing check province and city's consistency...")
         t = time()
-        area_df = copy.deepcopy(self.df)
-        self.china_province_number_mapping()
-        self.china_city_number_mapping()
-        area_df[province] = area_df[province].map(self.do_china_province_mapping)
-        area_df[city] = area_df[city].map(self.do_china_city_mapping)
-        col_name = 'province_city_consistency'
-        #area_df[col_name] = Series(np.random.randn(self.sample_num),index=area_df.index)
-        #area_df[col_name] = area_df[province].map(lambda x: np.nan if str(x) == 'nan' else np.nan)
-        #area_df = area_df.assign(col_name=pd.Series(np.random.randn(self.sample_num)).values)
-        area_df[col_name] = area_df[province].map(lambda z: np.nan if str(z) == 'nan' else (area_df[province].map(lambda x: str(x)[0:1]) == area_df[city].map(lambda y: str(y)[0:1])).astype(int))
-        area_df[col_name] = area_df[col_name].notnull().astype(int)
-        if do_province_mapping == True:
-            self.df[province] = area_df[province]
-            self.df[province] = self.df[province].notnull().astype(int)
-            self.df[col_name] = area_df[col_name]
-        if do_city_mapping == True:
-            self.df[city] = area_df[city]
-            self.df[city] = self.df[city].notnull().astype(int)
-            self.df[col_name] = area_df[col_name]
-        if do_province_mapping == False and do_city_mapping == False:
-            self.df = pd.concat([self.df,area_df[col_name]],axis=1)
-        self.df = self.df.reset_index(drop=True)
-        self.attributes == self.df.columns.values
+        try:
+            area_df = copy.deepcopy(self.df)
+            self.china_province_number_mapping()
+            self.china_city_number_mapping()
+            area_df[province] = area_df[province].map(self.do_china_province_mapping)
+            area_df[city] = area_df[city].map(self.do_china_city_mapping)
+            col_name = 'province_city_consistency'
+            #area_df[col_name] = Series(np.random.randn(self.sample_num),index=area_df.index)
+            #area_df[col_name] = area_df[province].map(lambda x: np.nan if str(x) == 'nan' else np.nan)
+            #area_df = area_df.assign(col_name=pd.Series(np.random.randn(self.sample_num)).values)
+            area_df[col_name] = area_df[province].map(lambda z: np.nan if str(z) == 'nan' else (area_df[province].map(lambda x: str(x)[0:1]) == area_df[city].map(lambda y: str(y)[0:1])).astype(int))
+            area_df[col_name] = area_df[col_name].notnull().astype(int)
+            if do_province_mapping == True:
+                self.df[province] = area_df[province]
+                self.df[province] = self.df[province].notnull().astype(int)
+                self.df[col_name] = area_df[col_name]
+            if do_city_mapping == True:
+                self.df[city] = area_df[city]
+                self.df[city] = self.df[city].notnull().astype(int)
+                self.df[col_name] = area_df[col_name]
+            if do_province_mapping == False and do_city_mapping == False:
+                self.df = pd.concat([self.df,area_df[col_name]],axis=1)
+            self.df = self.df.reset_index(drop=True)
+            #self.attributes = self.attributes.append(col_name)
+        except Exception as e:
+            print(e)
         print("Check province and city's consistency done in %0.3fs" % (time() - t))
 
         return self.df
@@ -679,6 +682,8 @@ class DataPreprocessing():
         #    self.x_df = self.df.drop(self.key,axis=1,inplace=False)[self.attributes]
         #else:
         #    self.x_df = self.df[self.attributes]
+        col_name = 'province_city_consistency' #fixme, col_name should be the same with col_name in check_province_city_consistency
+        self.attributes.append(col_name)
         self.x_df = self.df[self.attributes]
         return self.x_df,dummies_df_lst
 
