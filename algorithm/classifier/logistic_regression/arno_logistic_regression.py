@@ -3,75 +3,96 @@
 
 import numpy as np
 import multiprocessing
+import pickle
 import matplotlib.pyplot as plt
 from pandas import DataFrame,Series
 from sklearn import metrics
 from sklearn import model_selection
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
+from sklearn.externals import joblib
 from ChicagoBoothML_Helpy.EvaluationMetrics import bin_classif_eval
+from time import time
 
 def train_test(X_train,X_test,y_train,y_test):
+    print("Performing grid search...")
+    RANDOM_SEED = 99
+    k = 5
+    scoring_val = 'roc_auc'
+    max_features_val = 'sqrt'
     #-----------------------------Find the best parameters' combination of the model------------------------------
-    #param_test1 = {'n_estimators': range(20, 600, 20)}
-    #gsearch1 = GridSearchCV(estimator=RandomForestClassifier(min_samples_split=200,
-    #                                                         min_samples_leaf=2, max_depth=5, max_features='sqrt',
-    #                                                         random_state=19),
-    #                        param_grid=param_test1, scoring='roc_auc', cv=5)
-    #gsearch1.fit(X_train,y_train)
+    param_test1 = {'penalty':{'l1','l2'},'C':range(0.1,0.1,2)}
+    gsearch1 = GridSearchCV(estimator=LogisticRegression(class_weight = 'balanced',
+                                                         random_state = RANDOM_SEED,
+                                                         n_jobs = 4),
+                            param_grid=param_test1, scoring=scoring_val, cv=k)
+    t1 = time()
+    gsearch1.fit(X_train,y_train)
+    print("Grid search phase1 done in %0.3fs" % (time() - t1))
+    print("best score: %0.3f" % gsearch1.best_score_)
+    print("best parameters set:",gsearch1.best_params_)
     #for item in gsearch1.grid_scores_:
     #    print(item)
-    #print(gsearch1.best_params_)
-    #print(gsearch1.best_score_)
-    #print(gsearch1.grid_scores_, gsearch1.best_params_, gsearch2.best_score_,'\n')
-    # print('-----------------------------------------------------------------------------------------------------')
-    # param_test2 = {'max_depth': range(2, 16, 2), 'min_samples_split': range(20, 200, 20)}
-    # gsearch2 = GridSearchCV(estimator=RandomForestClassifier(n_estimators=300,
-    #                                                          min_samples_leaf=2, max_features='sqrt', oob_score=True,
-    #                                                          random_state=19),
-    #                         param_grid=param_test2, scoring='roc_auc', iid=False, cv=5)
-    # gsearch2.fit(X_train,y_train)
-    # for item in gsearch2.grid_scores_:
-    #    print(item)
-    # print(gsearch2.best_params_)
-    # print(gsearch2.best_score_)
-    # print(gsearch2.cv_results_, gsearch2.best_params_, gsearch2.best_score_,'\n')
+    #print(gsearch1.grid_scores_, gsearch1.best_params_, gsearch1.best_score_,'\n')
+    print()
+    penalty_val = gsearch1.best_params_.get('penalty')
+    c_val = gsearch1.best_params_.get('C')
+    print('-----------------------------------------------------------------------------------------------------')
+    param_test2 = {'solver':{'newton-cg','lbfgs','liblinear','sag'},'max_iter': range(20, 600, 20)}
+    gsearch2 = GridSearchCV(estimator=LogisticRegression(penalty=penalty_val,
+                                                         C=c_val,
+                                                         class_weight = 'balanced',
+                                                         random_state = RANDOM_SEED,
+                                                         n_jobs = 4),
+                            param_grid=param_test2, scoring=scoring_val, iid=False, cv=k)
+    t2 = time()
+    gsearch2.fit(X_train,y_train)
+    print("Grid search phase2 done in %0.3fs" % (time() - t2))
+    print("best score: %0.3f" % gsearch2.best_score_)
+    print("best parameters set:",gsearch2.best_params_)
+    print('best_estimator_:',gsearch2.best_estimator_)
+    #for item in gsearch2.grid_scores_:
+    #   print(item)
+    #print(gsearch2.cv_results_, gsearch2.best_params_, gsearch2.best_score_,'\n')
+    print()
+    solver_val = gsearch2.best_params_.get('solver')
+    max_iter_val = gsearch2.best_params_.get('max_iter')
     ##-----------------------------Find the best parameters' combination of the model------------------------------
-    B = 300
-    RANDOM_SEED = 99
-    model = \
-        RandomForestClassifier(
-            n_estimators=B,
-            #criterion='entropy',
-            criterion='gini',
-            #max_depth=None,  # expand until all leaves are pure or contain < MIN_SAMPLES_SPLIT samples
-            max_depth=4,
-            min_samples_split=80,
-            min_samples_leaf=2,
-            min_weight_fraction_leaf=0.0,
-            #max_features=None, # number of features to consider when looking for the best split; None: max_features=n_features
-            max_features="sqrt",
-            max_leaf_nodes=None,  # None: unlimited number of leaf nodes
-            bootstrap=True,
-            oob_score=True,  # estimate Out-of-Bag Cross Entropy
-            n_jobs=multiprocessing.cpu_count() - 4,  # paralellize over all CPU cores minus 4
-            class_weight=None,  # our classes are skewed, but but too skewed
-            random_state=RANDOM_SEED,
-            verbose=0,
-            warm_start=False)
 
+    model = \
+        LogisticRegression(penalty = penalty_val,
+                           dual = False,
+                           tol = 0.0001,
+                           C = c_val,
+                           fit_intercept = True,
+                           intercept_scaling = 1,
+                           class_weight = 'balanced',
+                           solver = solver_val,
+                           max_iter = max_iter_val,
+                           multi_class = 'ovr',
+                           verbose = 0,
+                           warm_start = False,
+                           random_state = RANDOM_SEED,
+                           n_jobs = 1)
+
+    print("Performing kfold cross-validation...")
     kfold = model_selection.KFold(n_splits=5,random_state=RANDOM_SEED)
     eval_standard = ['accuracy','recall_macro','precision_macro','f1_macro']
     results = []
+    t = time()
     for scoring in eval_standard:
         cv_results = model_selection.cross_val_score(model,X_train,y_train,scoring=scoring,cv=kfold)
         results.append(cv_results)
         msg = "%s: %f (%f)" % (scoring,cv_results.mean(),cv_results.std())
         print(msg)
-    # Make predictions on validation dataset
     model.fit(X_train,y_train)
+    print("Kfold cross-validation done in %0.3fs" % (time() - t))
+    print()
     print('oob_score: %f' % (model.oob_score_))
+    #joblib.dump(model,'../../model/train_model.pkl',compress=3)
+    joblib.dump(model,'/tmp/model/train_model.pkl',compress=3)
+
+    # Make predictions on validation dataset
     #default evaluation way
     print('-------------------default evaluation----------------------')
     rf_pred_probs = model.predict(X=X_test)
@@ -149,18 +170,24 @@ def train_test(X_train,X_test,y_train,y_test):
     print(model_oos_performance.iloc[idx,:])
 
 def train_test1(X_train,X_test,y_train,y_test):
-    B=10
+    print("Performing grid search...")
     parameters = {'penalty':['l2']}
-    best_parameters = {}
     model = \
         LogisticRegression(
             class_weight='balanced',
             penalty='l1'
         )
     grid_cv = GridSearchCV(model,parameters)
+    t = time()
     grid_cv.fit(X_train,y_train)
+    print("Grid search done in %0.3fs" % (time() - t))
+    print()
     print('best_score_:',grid_cv.best_score_)
     print('best_estimator_:',grid_cv.best_estimator_)
+    #joblib.dump(grid_cv.best_estimator_,'../../model/train_model.pkl',compress=3)
+    joblib.dump(grid_cv.best_estimator_,'/tmp/model/train_model.pkl',compress=3)
+    #with open("/tmp/model/train_model.pkl", "wb") as f:
+    #    pickle.dump(grid_cv.best_estimator_, f)
     rf_pred_probs = grid_cv.predict(X=X_test)
     result_probs = np.column_stack((rf_pred_probs,y_test.as_matrix()))
     #for item in result_probs:
