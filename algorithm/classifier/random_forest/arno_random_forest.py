@@ -93,8 +93,8 @@ def train_test(X_train,X_test,y_train,y_test):
     print("Kfold cross-validation done in %0.3fs" % (time() - t))
     print()
     print('oob_score: %f' % (model.oob_score_))
-    #joblib.dump(model,'../../model/train_model.pkl',compress=3)
-    joblib.dump(model,'/tmp/model/train_model.pkl',compress=3)
+    #joblib.dump(model,'../../model/rf_train_model.pkl',compress=3)
+    joblib.dump(model,'/tmp/model/rf_train_model.pkl',compress=3)
 
     # Make predictions on validation dataset
     #default evaluation way
@@ -190,9 +190,9 @@ def train_test1(X_train,X_test,y_train,y_test):
     print()
     print('best_score_:',grid_cv.best_score_)
     print('best_estimator_:',grid_cv.best_estimator_)
-    #joblib.dump(grid_cv.best_estimator_,'../../model/train_model.pkl',compress=3)
-    joblib.dump(grid_cv.best_estimator_,'/tmp/model/train_model.pkl',compress=3)
-    #with open("/tmp/model/train_model.pkl", "wb") as f:
+    #joblib.dump(grid_cv.best_estimator_,'../../model/rf_train_model.pkl',compress=3)
+    joblib.dump(grid_cv.best_estimator_,'/tmp/model/rf_train_model.pkl',compress=3)
+    #with open("/tmp/model/rf_train_model.pkl", "wb") as f:
     #    pickle.dump(grid_cv.best_estimator_, f)
     rf_pred_probs = grid_cv.predict(X=X_test)
     result_probs = np.column_stack((rf_pred_probs,y_test.as_matrix()))
