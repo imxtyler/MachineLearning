@@ -579,7 +579,7 @@ class DataPreprocessing():
             if do_province_mapping == False and do_city_mapping == False:
                 self.df = pd.concat([self.df,area_df[col_name]],axis=1)
             self.df = self.df.reset_index(drop=True)
-            #self.attributes = self.attributes.append(col_name)
+            self.attributes.append(col_name)
         except Exception as e:
             print(e)
         print("Check province and city's consistency done in %0.3fs" % (time() - t))
@@ -682,8 +682,6 @@ class DataPreprocessing():
         #    self.x_df = self.df.drop(self.key,axis=1,inplace=False)[self.attributes]
         #else:
         #    self.x_df = self.df[self.attributes]
-        col_name = 'province_city_consistency' #fixme, col_name should be the same with col_name in check_province_city_consistency
-        self.attributes.append(col_name)
         self.x_df = self.df[self.attributes]
         return self.x_df,dummies_df_lst
 
