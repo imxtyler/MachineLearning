@@ -21,7 +21,7 @@ def train_test(X_train,X_test,y_train,y_test):
     scoring_val = 'roc_auc'
     max_features_val = 'sqrt'
     #-----------------------------Find the best parameters' combination of the model------------------------------
-    param_test1 = {'penalty':{'l1','l2'},'C':range(0.1,0.1,2)}
+    param_test1 = {'penalty':['l1','l2'],'C':[1.0,10.0,100.0]}
     gsearch1 = GridSearchCV(estimator=LogisticRegression(class_weight = 'balanced',
                                                          random_state = RANDOM_SEED,
                                                          n_jobs = 4),
@@ -38,10 +38,12 @@ def train_test(X_train,X_test,y_train,y_test):
     penalty_val = gsearch1.best_params_.get('penalty')
     c_val = gsearch1.best_params_.get('C')
     print('-----------------------------------------------------------------------------------------------------')
-    param_test2 = {'solver':{'newton-cg','lbfgs','liblinear','sag'},'max_iter': range(20, 600, 20)}
+    param_test2 = {'tol':[0.0001,0.001,0.01,0.1]}
     gsearch2 = GridSearchCV(estimator=LogisticRegression(penalty=penalty_val,
                                                          C=c_val,
                                                          class_weight = 'balanced',
+                                                         solver= 'liblinear',
+                                                         max_iter= 100,
                                                          random_state = RANDOM_SEED,
                                                          n_jobs = 4),
                             param_grid=param_test2, scoring=scoring_val, iid=False, cv=k)
@@ -55,20 +57,19 @@ def train_test(X_train,X_test,y_train,y_test):
     #   print(item)
     #print(gsearch2.cv_results_, gsearch2.best_params_, gsearch2.best_score_,'\n')
     print()
-    solver_val = gsearch2.best_params_.get('solver')
-    max_iter_val = gsearch2.best_params_.get('max_iter')
+    tol_val = gsearch2.best_params_.get('tol')
     ##-----------------------------Find the best parameters' combination of the model------------------------------
 
     model = \
         LogisticRegression(penalty = penalty_val,
                            dual = False,
-                           tol = 0.0001,
+                           tol = tol_val,
                            C = c_val,
                            fit_intercept = True,
                            intercept_scaling = 1,
                            class_weight = 'balanced',
-                           solver = solver_val,
-                           max_iter = max_iter_val,
+                           solver= 'liblinear',
+                           max_iter= 100,
                            multi_class = 'ovr',
                            verbose = 0,
                            warm_start = False,
@@ -88,7 +89,6 @@ def train_test(X_train,X_test,y_train,y_test):
     model.fit(X_train,y_train)
     print("Kfold cross-validation done in %0.3fs" % (time() - t))
     print()
-    print('oob_score: %f' % (model.oob_score_))
     #joblib.dump(model,'../../model/lr_train_model.pkl',compress=3)
     joblib.dump(model,'/tmp/model/lr_train_model.pkl',compress=3)
 
