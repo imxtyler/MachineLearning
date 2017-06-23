@@ -34,7 +34,6 @@ def train_test(X_train,X_test,y_train,y_test):
     #for item in gsearch1.grid_scores_:
     #    print(item)
     #print(gsearch1.grid_scores_, gsearch1.best_params_, gsearch1.best_score_,'\n')
-    print()
     penalty_val = gsearch1.best_params_.get('penalty')
     c_val = gsearch1.best_params_.get('C')
     print('-----------------------------------------------------------------------------------------------------')
