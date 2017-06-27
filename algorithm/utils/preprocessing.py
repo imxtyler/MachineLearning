@@ -793,7 +793,44 @@ class DataPreprocessing():
 
         return self.x_df
 
-def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=None,to_binary_attrs=None,province=None,city=None,do_province_mapping=True,do_city_mapping=True,discard_threshold=1.0,show=True,stats=True,stats_file_path='/tmp',test_size=0.3,cut_point=0,random_state=99):
+    def max_min_normalization(self,attributes):
+        '''
+        :param attributes: list of strings, the attributes to be normalized 
+        :return:
+        '''
+        try:
+            for attr in attributes:
+                self.df[attr] = self.df[attr].map(lambda x:(x-self.df[attr].min())/(self.df[attr].max()-self.df[attr].min()))
+        except Exception as e:
+            print(e)
+
+    def z_core_normalization(self,attributes):
+        '''
+        :param attributes: list of strings, the attributes to be normalized 
+        :return: 
+        '''
+        try:
+            for attr in attributes:
+                mu = self.df[attr].mean()
+                sigma = self.df[attr].std()
+                self.df[attr] = self.df[attr].map(lambda x:(x-mu)/sigma)
+        except Exception as e:
+            print(e)
+
+    def sigmoid(self,attributes,useStatus=True):
+        '''
+        :param attributes: list of strings, the attributes to be normalized 
+        :param useStatus: the flag whether use the sigmoid function 
+        :return: 
+        '''
+        try:
+            if useStatus:
+                for attr in attributes:
+                    self.df[attr] = self.df[attr].map(lambda x:1.0/(1+np.exp(-float(x))))
+        except Exception as e:
+            print(e)
+
+def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=None,to_binary_attrs=None,normalized_attrs=None,province=None,city=None,do_province_mapping=True,do_city_mapping=True,discard_threshold=1.0,normalized_policy='sigmoid',show=True,stats=True,stats_file_path='/tmp',test_size=0.3,cut_point=0,random_state=99):
     '''
     :param data_path: string, the data's path
     :param form: int, indicate that what type of data to process:
@@ -804,11 +841,13 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
     :param all_labels: list of string, labels of data, including all X and y, even the label isn't used, should use when form=2
     :param target_key: string, label of target
     :param to_binary_attrs: list of string, attributes to be converted to binary value:1 or 0
+    :param normalized_attrs: list of string, attributes to be normalized 
     :param province: string, china province area.
     :param city: string, china city area. params province and city should used with together.
     :param do_province_mapping: bool, indicate that if doing mapping between china province area names and the area numbers.
     :param do_city_mapping: bool, indicate that if doing mapping between china city area names and the area numbers.
     :param discard_threshold: float, indicate that it will be discarded when one attribute's null value ratio > discard_threshold
+    :param normalized_policy: string, value should be in max_min,z_score,sigmoid 
     :param show: bool, indicate that the data's summary information should be printed
     :param stats: bool, indicate that the data's detail statistical information should be done
     :param stats_file_path: string, the path of statistical files
@@ -843,6 +882,15 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
         if to_binary_attrs is not None:
             df_datapreprocessing.transform_x_to_binary(to_binary_attrs)
             df_datapreprocessing.transform_x_dtype(to_binary_attrs,d_type=[int],uniform_type=True)
+        if normalized_attrs is not None:
+            if normalized_policy == 'max_min':
+                df_datapreprocessing.max_min_normalization(normalized_attrs)
+            elif normalized_policy == 'z_score':
+                df_datapreprocessing.z_core_normalization(normalized_attrs)
+            elif normalized_policy == 'sigmoid':
+                df_datapreprocessing.sigmoid(normalized_attrs)
+            else:
+                df_datapreprocessing.sigmoid(normalized_attrs)
         X_df = df_datapreprocessing.x_dummies_and_fillna()
 
         X_train = X_df.loc[train.index.values,:]
