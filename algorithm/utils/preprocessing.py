@@ -830,7 +830,7 @@ class DataPreprocessing():
         except Exception as e:
             print(e)
 
-def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=None,to_binary_attrs=None,normalized_attrs=None,province=None,city=None,do_province_mapping=True,do_city_mapping=True,discard_threshold=1.0,normalized_policy='sigmoid',show=True,stats=True,stats_file_path='/tmp',test_size=0.3,cut_point=0,random_state=99):
+def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=None,to_binary_attrs=None,normalized_attrs=None,province=None,city=None,do_province_mapping=True,do_city_mapping=True,discard_threshold=1.0,normalized_policy='sigmoid',show=True,stats=True,save_to_csv=False,stats_file_path='/tmp',test_size=0.3,cut_point=0,random_state=99):
     '''
     :param data_path: string, the data's path
     :param form: int, indicate that what type of data to process:
@@ -850,6 +850,7 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
     :param normalized_policy: string, value should be in max_min,z_score,sigmoid 
     :param show: bool, indicate that the data's summary information should be printed
     :param stats: bool, indicate that the data's detail statistical information should be done
+    :param save_to_csv: bool, indicate that the dataframe should be saved to csv file
     :param stats_file_path: string, the path of statistical files
     :param test_size: float, the size ratio of test
     :param cut_point: int, indicate that which files are used to train model, which files are used to test model, it should be used when form=2
@@ -869,6 +870,8 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
         if show==True:
             print("BEFORE DATA PREPROCESS, SUMMARY INFORMATION OF THE DATA:")
         bef_file_path_stats = stats_file_path+'/'+'bef_data_statistics.csv'
+        if save_to_csv == True:
+            df.to_csv(stats_file_path+'/'+'bef_dataframe.csv',sep=',',encoding='utf-8')
 
         resource_dir = '../resources'
         datacheck = DataCheck(df,target_key)
@@ -918,6 +921,8 @@ def data_preprocess(data_path,form=0,attributes=None,all_labels=None,target_key=
         aft_file_path_stats = stats_file_path+'/'+'aft_data_statistics.csv'
         datacheck = DataCheck(df,target_key)
         datacheck.data_summary(show=show,stats=stats,file_path_stats=aft_file_path_stats)
+        if save_to_csv == True:
+            df.to_csv(stats_file_path+'/'+'aft_dataframe.csv',sep=',',encoding='utf-8')
         print("Please see the statistical files %s and %s in directory %s if you want to see the detail information" % (bef_file_path_stats,aft_file_path_stats,stats_file_path))
 
     except Exception as e:
