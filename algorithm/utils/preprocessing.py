@@ -8,6 +8,7 @@ import copy
 import numpy as np
 import pandas as pd
 import codecs
+import platform_detect
 from sklearn.ensemble import RandomForestRegressor
 from time import time
 
@@ -38,9 +39,19 @@ int_regex_patterns = [
     r'([+-] *)\b[0-9]+\b'
     ]
 
-number_type = [np.int,np.int8,np.int16,np.int32,np.int64,
-               np.float,np.float16,np.float32,np.float64,np.float128,
-               np.double]
+if(platform_detect.detect_platform())==0:#windows
+    number_type = [np.int,np.int8,np.int16,np.int32,np.int64,
+                   np.float,np.float16,np.float32,np.float64,
+                   np.double]
+elif(platform_detect.detect_platform())==1:#linux
+    number_type = [np.int,np.int8,np.int16,np.int32,np.int64,
+                   np.float,np.float16,np.float32,np.float64,np.float128,
+                   np.double]
+else:
+    number_type = [np.int,np.int8,np.int16,np.int32,np.int64,
+                   np.float,np.float16,np.float32,np.float64,
+                   np.double]
+
 def is_dtype_numberical(x):
     '''
     :param x: the dtype that need to be judge whether it is numberical 
